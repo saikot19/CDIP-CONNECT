@@ -1,7 +1,106 @@
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  // Replace the previous controllers with a single list to track card order
+  final List<int> _cardOrder = [0, 1, 2]; // 0:Outstanding, 1:Overdue, 2:Savings
+
+  void _onCardTap(int index) {
+    setState(() {
+      // Move the tapped card to the back by rotating the list
+      final tappedCard = _cardOrder.removeAt(index);
+      _cardOrder.insert(0, tappedCard);
+    });
+  }
+
+  // Update the _buildCard method to modify positioning
+  Widget _buildCard({
+    required String title,
+    required String amount,
+    required Color color,
+    required String imagePath,
+    required int index,
+  }) {
+    final positions = [
+      Offset(0, 10), // Center card (Outstanding)
+      Offset(60, 15), // Right card (Overdue)
+      Offset(100, 20), // Left card (Savings)
+    ];
+
+    final currentPosition = _cardOrder.indexOf(index);
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      left: positions[currentPosition].dx,
+      top: positions[currentPosition].dy,
+      child: Container(
+        width: 197.23,
+        height: 259,
+        decoration: ShapeDecoration(
+          color: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+              spreadRadius: -1,
+            )
+          ],
+        ),
+        child: GestureDetector(
+          onTap: () => _onCardTap(_cardOrder.indexOf(index)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 21, top: 40),
+                child: Image.asset(
+                  imagePath,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 10),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 20),
+                child: Text(
+                  amount,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,231 +337,33 @@ class HomeScreen extends StatelessWidget {
               left: 34,
               top: 253,
               child: Container(
-                width: 342,
-                height: 259,
+                width: 412,
+                height:
+                    300, // Increased height to accommodate the pyramid layout
                 child: Stack(
                   children: [
-                    Positioned(
-                      left: 197.23,
-                      top: 72.68,
-                      child: Container(
-                        width: 144.77,
-                        height: 186.32,
-                        decoration: ShapeDecoration(
-                          color: const Color(0xFF05A300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          shadows: [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                              spreadRadius: -1,
-                            )
-                          ],
-                        ),
-                      ),
+                    _buildCard(
+                      title: 'Outstanding',
+                      amount: '1,09,447 BDT',
+                      color: const Color(0xFF0080C6),
+                      imagePath: 'assets/logo/flowbite_chart-pie-outline.png',
+                      index: 0,
                     ),
-                    Positioned(
-                      left: 210.86,
-                      top: 196,
-                      child: SizedBox(
-                        width: 110.15,
-                        height: 25.59,
-                        child: Text(
-                          '15,400 BDT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w600,
-                            height: 1.25,
-                          ),
-                        ),
-                      ),
+                    _buildCard(
+                      title: 'Overdue',
+                      amount: '69,897 BDT',
+                      color: const Color(0xFFF27024),
+                      imagePath: 'assets/logo/zondicons_minus-outline.png',
+                      index: 1,
                     ),
-                    Positioned(
-                      left: 210.86,
-                      top: 199.62,
-                      child: SizedBox(
-                        width: 57.70,
-                        height: 14.33,
-                        child: Text(
-                          'Savings',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
-                            height: 0.88,
-                          ),
-                        ),
-                      ),
+                    _buildCard(
+                      title: 'Savings',
+                      amount: '15,400 BDT',
+                      color: const Color(0xFF05A300),
+                      imagePath: 'assets/logo/Group.png',
+                      index: 2,
                     ),
-                    Positioned(
-                      left: 211.26,
-                      top: 92.77,
-                      child: Container(
-                        width: 64.25,
-                        height: 64.25,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              left: 32.13,
-                              top: 13.29,
-                              child: SizedBox(
-                                width: 12.19,
-                                height: 15.51,
-                                child: Text(
-                                  '৳',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontFamily: 'Tiro Devanagari Hindi',
-                                    fontWeight: FontWeight.w400,
-                                    height: 0.88,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 98.61,
-                      top: 36.85,
-                      child: Container(
-                        width: 185.69,
-                        height: 222.15,
-                        decoration: ShapeDecoration(
-                          color: const Color(0xFFF27024),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          shadows: [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                              spreadRadius: -1,
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 115.40,
-                      top: 194,
-                      child: SizedBox(
-                        width: 139.53,
-                        height: 25.59,
-                        child: Text(
-                          '69,897 BDT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 25,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w600,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 115.40,
-                      top: 187.34,
-                      child: SizedBox(
-                        width: 31.47,
-                        height: 14.33,
-                        child: Text(
-                          'Due',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
-                            height: 0.88,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 115.79,
-                      top: 67.17,
-                      child: Container(
-                        width: 64.25,
-                        height: 64.25,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(),
-                        child: Stack(),
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      child: Container(
-                        width: 197.23,
-                        height: 259,
-                        decoration: ShapeDecoration(
-                          color: const Color(0xFF0080C6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          shadows: [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                              spreadRadius: -1,
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 19.93,
-                      top: 189.39,
-                      child: Text(
-                        '1,09,447 BDT',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 25,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w600,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 19.93,
-                      top: 169,
-                      child: Text(
-                        'Outstanding',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w400,
-                          height: 0.88,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 21.38,
-                      top: 39.53,
-                      child: Container(
-                        width: 64.25,
-                        height: 64.25,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(),
-                        child: Stack(),
-                      ),
-                    ),
-                  ],
+                  ].reversed.toList(),
                 ),
               ),
             ),
