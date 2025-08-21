@@ -18,7 +18,7 @@ class PasswordResetPopup extends StatelessWidget {
             Positioned(
               left: 117,
               top: 189,
-              child: Container(
+              child: SizedBox(
                 width: 178,
                 height: 156,
                 child: Image.asset(

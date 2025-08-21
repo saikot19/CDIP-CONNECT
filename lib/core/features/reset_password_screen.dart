@@ -252,7 +252,7 @@ class ResetPasswordScreen extends StatelessWidget {
             Positioned(
               left: 318,
               top: 44,
-              child: Container(width: 74, height: 54, child: Stack()),
+              child: SizedBox(width: 74, height: 54, child: Stack()),
             ),
           ],
         ),

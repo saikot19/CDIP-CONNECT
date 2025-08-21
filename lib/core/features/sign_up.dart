@@ -179,8 +179,18 @@ class SignUpScreen extends StatelessWidget {
                 child: Stack(),
               ),
             ),
+            // Phone icon inside the input field
             Positioned(
-              left: 90,
+              left: 45,
+              top: 214,
+              child: Icon(
+                Icons.phone_android,
+                size: 18,
+                color: Color(0xFF0880C6),
+              ),
+            ),
+            Positioned(
+              left: 70,
               top: 214,
               child: Text(
                 '+88 01746538451',
@@ -192,6 +202,7 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
             ),
+
             Positioned(
               left: 20,
               top: 53,

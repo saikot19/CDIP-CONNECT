@@ -29,7 +29,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             Positioned(
               left: 101,
               top: 372,
-              child: Container(
+              child: SizedBox(
                 width: 210,
                 height: 173.94,
                 child: Image.asset(
