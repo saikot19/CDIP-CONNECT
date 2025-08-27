@@ -49,7 +49,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -70,9 +70,15 @@ flutter:
     - assets\logo\wallet with money.png
     - assets\logo\success.png
     - assets/logo/profile.png
-    
-
-
+    - assets/logo/Group.png
+    - assets/logo/zondicons_minus-outline.png
+    - assets/logo/flowbite_chart-pie-outline.png
+    - assets/logo/fluent_money-hand-24-regular.png
+    - assets/logo/fluent-mdl2_bank.png
+    - assets/logo/fluent_people-community-add-24-regular.png
+    - assets/logo/tdesign_home.png
+    - assets/logo/iconoir_profile-circle.png
+    - assets/logo/C-5 1@2x.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

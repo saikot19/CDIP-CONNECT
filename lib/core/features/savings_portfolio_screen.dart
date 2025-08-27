@@ -1,5 +1,7 @@
+import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'loan_portfolio_screen.dart';
+import '../widgets/bottom_nav_bar.dart';
 
 class SavingsPortfolioScreen extends StatelessWidget {
   const SavingsPortfolioScreen({super.key});
@@ -20,7 +22,8 @@ class SavingsPortfolioScreen extends StatelessWidget {
             child: Container(
               width: 412,
               height: 116,
-              decoration: const BoxDecoration(color: Colors.white),
+              decoration:
+                  const BoxDecoration(color: Color.fromARGB(255, 2, 33, 90)),
             ),
           ),
           Positioned(
@@ -40,45 +43,18 @@ class SavingsPortfolioScreen extends StatelessWidget {
               ),
             ),
           ),
+          // Top Bar: Just the current screen as a title
           Positioned(
             left: 73,
             top: 61,
-            child: GestureDetector(
-              onTap: () {
-                // Do nothing or pop if already on this screen
-              },
-              child: Text(
-                'Savings Portfolio',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1.42,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 200,
-            top: 61,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => LoanPortfolioScreen()),
-                );
-              },
-              child: Text(
-                'Loan Portfolio',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 24,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1.42,
-                ),
+            child: Text(
+              'Savings Portfolio',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w500,
+                height: 1.42,
               ),
             ),
           ),
@@ -597,35 +573,112 @@ class SavingsPortfolioScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Responsive tab switcher for Loan Portfolio and Savings Portfolio
                   Positioned(
-                    left: 3,
+                    left: 0,
                     top: 0,
-                    child: Opacity(
-                      opacity: 0.50,
-                      child: Text(
-                        'Loan Portfolio',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w400,
-                          height: 1.67,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 114,
-                    top: 0,
-                    child: Text(
-                      'Savings Portfolio',
-                      style: TextStyle(
-                        color: const Color(0xFF0880C6),
-                        fontSize: 12,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w600,
-                        height: 1.67,
-                      ),
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        bool isSavings = true;
+                        return Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                if (isSavings) {
+                                  setState(() => isSavings = false);
+                                  Future.delayed(
+                                      const Duration(milliseconds: 300), () {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              LoanPortfolioScreen()),
+                                    );
+                                  });
+                                }
+                              },
+                              child: AnimatedCrossFade(
+                                duration: const Duration(milliseconds: 300),
+                                crossFadeState: isSavings
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                                firstChild: Opacity(
+                                  opacity: 0.5,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0, vertical: 4),
+                                    child: Text(
+                                      'Loan Portfolio',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 12,
+                                        fontFamily: 'Proxima Nova',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.67,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                secondChild: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0, vertical: 4),
+                                  child: Text(
+                                    'Loan Portfolio',
+                                    style: TextStyle(
+                                      color: const Color(0xFF0880C6),
+                                      fontSize: 12,
+                                      fontFamily: 'Proxima Nova',
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.67,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                if (!isSavings) {
+                                  setState(() => isSavings = true);
+                                }
+                              },
+                              child: AnimatedCrossFade(
+                                duration: const Duration(milliseconds: 300),
+                                crossFadeState: isSavings
+                                    ? CrossFadeState.showSecond
+                                    : CrossFadeState.showFirst,
+                                firstChild: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0, vertical: 4),
+                                  child: Text(
+                                    'Savings Portfolio',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 12,
+                                      fontFamily: 'Proxima Nova',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.67,
+                                    ),
+                                  ),
+                                ),
+                                secondChild: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0, vertical: 4),
+                                  child: Text(
+                                    'Savings Portfolio',
+                                    style: TextStyle(
+                                      color: const Color(0xFF0880C6),
+                                      fontSize: 12,
+                                      fontFamily: 'Proxima Nova',
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.67,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   Positioned(
@@ -721,6 +774,7 @@ class SavingsPortfolioScreen extends StatelessWidget {
               ),
             ),
           ),
+          const BottomNavBar(),
         ],
       ),
     ));
