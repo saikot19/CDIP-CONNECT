@@ -2,6 +2,7 @@ import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'savings_portfolio_screen.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'loan_details.dart'; // Import your details screen
 
 class LoanPortfolioScreen extends StatefulWidget {
   const LoanPortfolioScreen({super.key});
@@ -270,13 +271,31 @@ class _LoanPortfolioContent extends StatelessWidget {
         Positioned(
           left: 0,
           top: 42,
-          child: Container(
-            width: 372,
-            height: 173,
-            decoration: ShapeDecoration(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          child: GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => DraggableScrollableSheet(
+                  initialChildSize: 0.7,
+                  minChildSize: 0.5,
+                  maxChildSize: 0.95,
+                  expand: false,
+                  builder: (context, scrollController) => LoanDetailsScreen(
+                    scrollController: scrollController,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              width: 372,
+              height: 173,
+              decoration: ShapeDecoration(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ),

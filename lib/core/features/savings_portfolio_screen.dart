@@ -2,6 +2,7 @@ import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'loan_portfolio_screen.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'savings_details.dart'; // Import your details screen
 
 class SavingsPortfolioScreen extends StatelessWidget {
   const SavingsPortfolioScreen({super.key});
@@ -80,13 +81,32 @@ class SavingsPortfolioScreen extends StatelessWidget {
                   Positioned(
                     left: 0,
                     top: 42,
-                    child: Container(
-                      width: 372,
-                      height: 126,
-                      decoration: ShapeDecoration(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.7,
+                            minChildSize: 0.5,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) =>
+                                SavingsDetailsScreen(
+                              scrollController: scrollController,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 372,
+                        height: 126,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -204,13 +224,32 @@ class SavingsPortfolioScreen extends StatelessWidget {
                   Positioned(
                     left: 0,
                     top: 176,
-                    child: Container(
-                      width: 372,
-                      height: 126,
-                      decoration: ShapeDecoration(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.7,
+                            minChildSize: 0.5,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) =>
+                                SavingsDetailsScreen(
+                              scrollController: scrollController,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 372,
+                        height: 126,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -328,13 +367,32 @@ class SavingsPortfolioScreen extends StatelessWidget {
                   Positioned(
                     left: 0,
                     top: 310,
-                    child: Container(
-                      width: 372,
-                      height: 126,
-                      decoration: ShapeDecoration(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.7,
+                            minChildSize: 0.5,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) =>
+                                SavingsDetailsScreen(
+                              scrollController: scrollController,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 372,
+                        height: 126,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -452,13 +510,32 @@ class SavingsPortfolioScreen extends StatelessWidget {
                   Positioned(
                     left: 0,
                     top: 442,
-                    child: Container(
-                      width: 372,
-                      height: 126,
-                      decoration: ShapeDecoration(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => DraggableScrollableSheet(
+                            initialChildSize: 0.7,
+                            minChildSize: 0.5,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) =>
+                                SavingsDetailsScreen(
+                              scrollController: scrollController,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 372,
+                        height: 126,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
