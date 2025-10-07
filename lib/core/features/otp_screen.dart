@@ -1,178 +1,253 @@
 import 'package:flutter/material.dart';
 import 'set_password.dart';
+import '../services/api_service.dart';
+import 'home_screen.dart';
+import 'dart:async';
 
-class OTPScreen extends StatelessWidget {
-  const OTPScreen({super.key});
+class OTPScreen extends StatefulWidget {
+  final String phone;
+  final String msgId;
+  const OTPScreen({super.key, required this.phone, required this.msgId});
+
+  @override
+  State<OTPScreen> createState() => _OTPScreenState();
+}
+
+class _OTPScreenState extends State<OTPScreen> {
+  final TextEditingController _otpController = TextEditingController();
+  String? _errorText;
+  bool _isValid = false;
+  int _remainingSeconds = 240; // 4 minutes
+  Timer? _timer;
+  bool _canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        setState(() {
+          _canResend = true;
+        });
+        timer.cancel();
+      }
+    });
+  }
+
+  String _formatTime(int seconds) {
+    final min = seconds ~/ 60;
+    final sec = seconds % 60;
+    return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  }
+
+  String _maskedPhone(String phone) {
+    if (phone.length < 3) return phone;
+    return '***${phone.substring(phone.length - 3)}';
+  }
+
+  void _validateOtp(String value) {
+    if (value.length != 6 || !RegExp(r'^\d{6}$').hasMatch(value)) {
+      setState(() {
+        _errorText = 'Enter a valid 6-digit OTP';
+        _isValid = false;
+      });
+    } else {
+      setState(() {
+        _errorText = null;
+        _isValid = true;
+      });
+    }
+  }
+
+  void _onVerify() async {
+    _validateOtp(_otpController.text);
+    if (_isValid) {
+      final result = await ApiService.verifyOtp(
+        phone: widget.phone,
+        otp: _otpController.text.trim(),
+      );
+      if (result['status'] == true &&
+          result['memberDetails'] != null &&
+          result['memberDetails'].isNotEmpty) {
+        final memberName = result['memberDetails'][0]['name'] ?? '';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(memberName: memberName),
+          ),
+        );
+      } else {
+        setState(() {
+          _errorText = result['message'] ?? 'Invalid OTP entered.';
+        });
+      }
+    }
+  }
+
+  Future<void> _onResend() async {
+    setState(() {
+      _canResend = false;
+      _remainingSeconds = 240;
+      _errorText = null;
+    });
+    _startTimer();
+    await ApiService.sendOtp(widget.phone);
+    // Optionally show a message that OTP was resent
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('OTP resent successfully')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: 412,
-        height: 917,
-        clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(color: Colors.white),
-        child: Stack(
-          children: [
-            // Back Button
-            Positioned(
-              left: 20,
-              top: 53,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 35,
-                  height: 35,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Back Button
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
                 ),
-              ),
-            ),
-            // Title
-            Positioned(
-              left: 20,
-              top: 111,
-              child: Text(
-                'OTP Verification',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 30,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1.13,
+                const SizedBox(height: 24),
+                // Title
+                const Text(
+                  'OTP Verification',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 30,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ),
-            // Description
-            Positioned(
-              left: 20,
-              top: 159,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Check your phone. We have sent you the \ncode at ',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
+                const SizedBox(height: 32),
+                // Description
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: 'Check your phone. We have sent you the code at ',
+                        style: TextStyle(
+                          color: Color(0xFF3A3A3A),
+                          fontSize: 16,
+                          fontFamily: 'Proxima Nova',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      TextSpan(
+                        text: _maskedPhone(widget.phone),
+                        style: const TextStyle(
+                          color: Color(0xFF3A3A3A),
+                          fontSize: 16,
+                          fontFamily: 'Proxima Nova',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // OTP Input Field
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFF0080C6)),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: TextField(
+                    controller: _otpController,
+                    onChanged: _validateOtp,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      counterText: '',
+                      border: InputBorder.none,
+                      hintText: 'Enter OTP',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFFB0B0B0),
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',
                         fontWeight: FontWeight.w400,
-                        height: 1.25,
                       ),
+                      errorText: _errorText,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 8),
                     ),
-                    TextSpan(
-                      text: '***451',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
+                    style: const TextStyle(
+                      color: Color(0xFF3A3A3A),
+                      fontSize: 16,
+                      fontFamily: 'Proxima Nova',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Timer and Resend
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _remainingSeconds > 0
+                          ? '${_formatTime(_remainingSeconds)} remaining'
+                          : 'Time expired',
+                      style: const TextStyle(
+                        color: Color(0xFF3A3A3A),
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _canResend ? _onResend : null,
+                      child: Text(
+                        'Resend Code',
+                        style: TextStyle(
+                          color: _canResend
+                              ? const Color(0xFF0080C6)
+                              : Colors.grey,
+                          fontSize: 13,
+                          fontFamily: 'Proxima Nova',
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            // OTP Input Boxes
-            ...List.generate(
-                4,
-                (index) => Positioned(
-                      left: 20 + (index * 58),
-                      top: 230,
-                      child: Container(
-                        width: 50,
-                        height: 48,
-                        alignment: Alignment.center,
-                        decoration: ShapeDecoration(
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                                width: 1, color: const Color(0xFF0080C6)),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                        child: Text(
-                          '4',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
-                            fontSize: 16,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )),
-            // Timer
-            Positioned(
-              left: 20,
-              top: 298,
-              child: Text(
-                '09 seconds remaining',
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1.25,
-                ),
-              ),
-            ),
-            // Resend Code
-            Positioned(
-              left: 314,
-              top: 301,
-              child: GestureDetector(
-                onTap: () {
-                  // Add resend code functionality
-                },
-                child: Text(
-                  'Resend Code',
-                  style: TextStyle(
-                    color: const Color(0xFF0080C6),
-                    fontSize: 13,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            // Verify Button
-            Positioned(
-              left: 20,
-              top: 365,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SetPasswordScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 372,
+                const SizedBox(height: 32),
+                // Verify Button
+                SizedBox(
+                  width: double.infinity,
                   height: 49,
-                  decoration: ShapeDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment(-0.00, 0.07),
-                      end: Alignment(1.00, 0.91),
-                      colors: [Color(0xFF21409A), Color(0xFF0080C6)],
+                  child: ElevatedButton(
+                    onPressed: _onVerify,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      backgroundColor: const Color(0xFF21409A),
+                      foregroundColor: Colors.white,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    shadows: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 15,
-                        offset: Offset(0, 4),
-                        spreadRadius: 0,
-                      )
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
+                    child: const Text(
                       'VERIFY NOW',
                       style: TextStyle(
                         color: Colors.white,
@@ -183,9 +258,9 @@ class OTPScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

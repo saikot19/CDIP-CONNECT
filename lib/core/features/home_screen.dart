@@ -5,7 +5,8 @@ import 'savings_portfolio_screen.dart';
 import '../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String memberName;
+  const HomeScreen({super.key, this.memberName = 'Shahrin Zaman'});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -171,9 +172,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(
             left: 20,
             top: 128,
-            child: const Text(
-              'Shahrin Zaman',
-              style: TextStyle(
+            child: Text(
+              widget.memberName,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 26,
                 fontFamily: 'Proxima Nova',
@@ -192,10 +193,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               width: 412,
               height: 197,
               decoration: ShapeDecoration(
-                image: DecorationImage(
-                  image: NetworkImage("https://placehold.co/412x197"),
-                  fit: BoxFit.cover,
-                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(25),
@@ -339,33 +336,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(
             left: 34,
             top: 253,
-            child: Container(
+            child: SizedBox(
               width: 412,
-              height: 300, // Increased height to accommodate the pyramid layout
+              height: 300,
               child: Stack(
-                children: [
-                  _buildCard(
-                    title: 'Outstanding',
-                    amount: '1,09,447 BDT',
-                    color: const Color(0xFF0080C6),
-                    imagePath: 'assets/logo/flowbite_chart-pie-outline.png',
-                    index: 0,
-                  ),
-                  _buildCard(
-                    title: 'Overdue',
-                    amount: '69,897 BDT',
-                    color: const Color(0xFFF27024),
-                    imagePath: 'assets/logo/zondicons_minus-outline.png',
-                    index: 1,
-                  ),
-                  _buildCard(
-                    title: 'Savings',
-                    amount: '15,400 BDT',
-                    color: const Color(0xFF05A300),
-                    imagePath: 'assets/logo/Group.png',
-                    index: 2,
-                  ),
-                ].reversed.toList(),
+                children: _cardOrder.map((cardIndex) {
+                  // Card data
+                  final cardData = [
+                    {
+                      'title': 'Outstanding',
+                      'amount': '1,09,447 BDT',
+                      'color': const Color(0xFF0080C6),
+                      'imagePath': 'assets/logo/flowbite_chart-pie-outline.png',
+                    },
+                    {
+                      'title': 'Overdue',
+                      'amount': '69,897 BDT',
+                      'color': const Color(0xFFF27024),
+                      'imagePath': 'assets/logo/zondicons_minus-outline.png',
+                    },
+                    {
+                      'title': 'Savings',
+                      'amount': '15,400 BDT',
+                      'color': const Color(0xFF05A300),
+                      'imagePath': 'assets/logo/Group.png',
+                    },
+                  ][cardIndex];
+
+                  // The z-order is determined by the position in _cardOrder: last is on top
+                  return _buildCard(
+                    title: cardData['title'] as String,
+                    amount: cardData['amount'] as String,
+                    color: cardData['color'] as Color,
+                    imagePath: cardData['imagePath'] as String,
+                    index: cardIndex,
+                  );
+                }).toList(),
               ),
             ),
           ),
