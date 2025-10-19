@@ -10,26 +10,34 @@ class ApiService {
         body: jsonEncode({"verify_phone": phone}),
       );
 
+      // If server returns JSON, parse it. Otherwise return safe error.
+      final bodyString = response.body ?? '';
       if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-
-        return {
-          'status': body['status'],
-          'msg': body['message'],
-          'otp': body['otp'], // ✅ changed from msg_id to otp
-        };
+        try {
+          final body = jsonDecode(bodyString);
+          return Map<String, dynamic>.from(body);
+        } catch (e) {
+          // Response not JSON (HTML/debug page). Return safe error but do not crash.
+          return {
+            'status': response.statusCode,
+            'msg': 'Unexpected server response (non-JSON)',
+            'msg_id': null,
+            'raw': bodyString,
+          };
+        }
       } else {
         return {
           'status': response.statusCode,
-          'msg': 'Server returned error ${response.statusCode}',
-          'otp': null,
+          'msg': 'Server error: ${response.statusCode}',
+          'msg_id': null,
+          'raw': bodyString,
         };
       }
     } catch (e) {
       return {
         'status': 'error',
         'msg': 'Failed to send OTP: $e',
-        'otp': null,
+        'msg_id': null,
       };
     }
   }
@@ -41,36 +49,41 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('https://connect.cdipits.site/api/v1/otp_verified'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'FlutterApp/1.0',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "verify_phone": phone,
-          "check_otp": otp, // ✅ corrected key name
+          "check_otp": otp,
         }),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
+      final bodyString = response.body ?? '';
       if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        return {
-          'status': body['status'],
-          'message': body['message'],
-          'memberDetails': body['memberDetails'] ?? [],
-        };
+        try {
+          final Map<String, dynamic> body = jsonDecode(bodyString);
+          // Normalize return shape for convenience
+          return {
+            ...body,
+            'status': body['status'], // boolean true/false per API
+            'message': body['message'] ?? body['msg'] ?? '',
+            'memberDetails': body['memberDetails'] ?? [],
+          };
+        } catch (e) {
+          return {
+            'status': false,
+            'message': 'Unexpected server response (non-JSON)',
+            'memberDetails': [],
+            'raw': bodyString,
+          };
+        }
       } else {
         return {
           'status': false,
           'message': 'Server error: ${response.statusCode}',
           'memberDetails': [],
+          'raw': bodyString,
         };
       }
     } catch (e) {
-      print('Exception caught: $e');
       return {
         'status': false,
         'message': 'Failed to verify OTP: $e',

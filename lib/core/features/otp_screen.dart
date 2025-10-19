@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'set_password.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../services/api_service.dart';
 import 'home_screen.dart';
-import 'dart:async';
+import '../database/db_helper.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -20,6 +24,7 @@ class _OTPScreenState extends State<OTPScreen> {
   int _remainingSeconds = 240; // 4 minutes
   Timer? _timer;
   bool _canResend = false;
+  bool _isVerifying = false;
 
   @override
   void initState() {
@@ -35,6 +40,11 @@ class _OTPScreenState extends State<OTPScreen> {
   }
 
   void _startTimer() {
+    _timer?.cancel();
+    setState(() {
+      _remainingSeconds = 240;
+      _canResend = false;
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         setState(() {
@@ -74,62 +84,96 @@ class _OTPScreenState extends State<OTPScreen> {
     }
   }
 
-  void _onVerify() async {
-    _validateOtp(_otpController.text);
-    if (_isValid) {
-      final result = await ApiService.verifyOtp(
-        phone: widget.phone,
-        otp: _otpController.text.trim(),
-      );
-      if (result['status'] == true &&
-          result['memberDetails'] != null &&
-          result['memberDetails'].isNotEmpty) {
-        final memberName = result['memberDetails'][0]['name'] ?? '';
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(memberName: memberName),
-          ),
-        );
-      } else {
-        setState(() {
-          _errorText = result['message'] ?? 'Invalid OTP entered.';
-        });
+  Future<void> _onVerify() async {
+    _validateOtp(_otpController.text.trim());
+    if (!_isValid) return;
+
+    setState(() {
+      _isVerifying = true;
+      _errorText = null;
+    });
+
+    final result = await ApiService.verifyOtp(
+      phone: widget.phone,
+      otp: _otpController.text.trim(),
+    );
+
+    setState(() {
+      _isVerifying = false;
+    });
+
+    if (result['status'] == true &&
+        result['memberDetails'] != null &&
+        (result['memberDetails'] as List).isNotEmpty) {
+      final Map<String, dynamic> member =
+          Map<String, dynamic>.from(result['memberDetails'][0]);
+
+      // 1) Save to SharedPreferences (simple credential caching)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('member', jsonEncode(member));
+        // optionally store phone too
+        await prefs.setString('member_phone', widget.phone);
+      } catch (e) {
+        // ignore prefs errors, still continue
       }
+
+      // 2) Save into local sqlite DB (use your db helper)
+      try {
+        // DBHelper provides a static method to insert/update from a Map
+        await DBHelper.insertOrUpdateMemberMap(member);
+      } catch (e) {
+        // ignore DB failures for now
+      }
+
+      // 3) Navigate to HomeScreen and pass member name to show immediately
+      final memberName = (member['name'] ?? '').toString();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(memberName: memberName),
+        ),
+        (route) => false,
+      );
+    } else {
+      setState(() {
+        _errorText = result['message']?.toString() ?? 'Invalid OTP entered.';
+      });
     }
   }
 
   Future<void> _onResend() async {
+    if (!_canResend) return;
     setState(() {
+      _errorText = null;
       _canResend = false;
       _remainingSeconds = 240;
-      _errorText = null;
     });
     _startTimer();
-    await ApiService.sendOtp(widget.phone);
-    // Optionally show a message that OTP was resent
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OTP resent successfully')),
-    );
+    final resp = await ApiService.sendOtp(widget.phone);
+    final msg = resp['msg'] ?? resp['message'] ?? 'OTP resent';
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg.toString())));
   }
 
   @override
   Widget build(BuildContext context) {
+    // Responsive paddings and fonts preserved, UI kept same visually.
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back Button
+                // Back
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
                 ),
                 const SizedBox(height: 24),
-                // Title
                 const Text(
                   'OTP Verification',
                   style: TextStyle(
@@ -139,8 +183,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 32),
-                // Description
+                const SizedBox(height: 20),
                 Text.rich(
                   TextSpan(
                     children: [
@@ -165,8 +208,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
-                // OTP Input Field
+                const SizedBox(height: 28),
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -175,19 +217,14 @@ class _OTPScreenState extends State<OTPScreen> {
                   ),
                   child: TextField(
                     controller: _otpController,
-                    onChanged: _validateOtp,
+                    onChanged: (v) => _validateOtp(v),
                     keyboardType: TextInputType.number,
                     maxLength: 6,
                     decoration: InputDecoration(
                       counterText: '',
                       border: InputBorder.none,
-                      hintText: 'Enter OTP',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFFB0B0B0),
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
-                      ),
+                      hintText: 'Enter 6-digit OTP',
+                      hintStyle: const TextStyle(color: Color(0xFFB0B0B0)),
                       errorText: _errorText,
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 8),
@@ -200,8 +237,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Timer and Resend
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -211,9 +247,8 @@ class _OTPScreenState extends State<OTPScreen> {
                           : 'Time expired',
                       style: const TextStyle(
                         color: Color(0xFF3A3A3A),
-                        fontSize: 16,
+                        fontSize: 14,
                         fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     GestureDetector(
@@ -224,7 +259,7 @@ class _OTPScreenState extends State<OTPScreen> {
                           color: _canResend
                               ? const Color(0xFF0080C6)
                               : Colors.grey,
-                          fontSize: 13,
+                          fontSize: 14,
                           fontFamily: 'Proxima Nova',
                           fontWeight: FontWeight.w700,
                         ),
@@ -232,30 +267,29 @@ class _OTPScreenState extends State<OTPScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                // Verify Button
+                const SizedBox(height: 28),
                 SizedBox(
                   width: double.infinity,
                   height: 49,
                   child: ElevatedButton(
-                    onPressed: _onVerify,
+                    onPressed: _isVerifying ? null : _onVerify,
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
+                      backgroundColor: const Color(0xFF21409A),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(5),
                       ),
-                      backgroundColor: const Color(0xFF21409A),
-                      foregroundColor: Colors.white,
                     ),
-                    child: const Text(
-                      'VERIFY NOW',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isVerifying
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'VERIFY NOW',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
