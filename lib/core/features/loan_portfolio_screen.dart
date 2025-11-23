@@ -1,8 +1,8 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
 import 'savings_portfolio_screen.dart';
-import '../widgets/bottom_nav_bar.dart';
-import 'loan_details.dart'; // Import your details screen
+import 'loan_details.dart';
 
 class LoanPortfolioScreen extends StatefulWidget {
   const LoanPortfolioScreen({super.key});
@@ -13,6 +13,30 @@ class LoanPortfolioScreen extends StatefulWidget {
 
 class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
   bool showLoan = true;
+  late Future<List<Map<String, dynamic>>> _loanProductsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLoanData();
+  }
+
+  void _loadLoanData() {
+    _loanProductsFuture = _getLoanProductsWithTransactions();
+  }
+
+  Future<List<Map<String, dynamic>>> _getLoanProductsWithTransactions() async {
+    final db = DatabaseHelper();
+    final products = await db.getLoanProducts();
+    final transactions = await db.getLoanTransactions();
+
+    return List.generate(products.length, (index) {
+      return {
+        'product': products[index],
+        'transactions': transactions,
+      };
+    });
+  }
 
   void switchToSavings() {
     setState(() {
@@ -72,9 +96,9 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                 Positioned(
                   left: 73,
                   top: 61,
-                  child: Text(
+                  child: const Text(
                     'Loan Portfolio',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontFamily: 'Proxima Nova',
@@ -103,14 +127,27 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                     height: 776,
                     child: Stack(
                       children: [
-                        // Crossfade between Loan and Savings content
-                        AnimatedCrossFade(
-                          duration: const Duration(milliseconds: 350),
-                          crossFadeState: showLoan
-                              ? CrossFadeState.showFirst
-                              : CrossFadeState.showSecond,
-                          firstChild: _LoanPortfolioContent(),
-                          secondChild: const SizedBox.shrink(),
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _loanProductsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return Center(
+                                child: Text('No loan data available'),
+                              );
+                            }
+
+                            final loanData = snapshot.data!;
+                            return _LoanPortfolioContent(
+                              loanData: loanData,
+                            );
+                          },
                         ),
                         // Responsive tab switcher for Loan Portfolio and Savings Portfolio
                         Positioned(
@@ -119,9 +156,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                           child: Row(
                             children: [
                               GestureDetector(
-                                onTap: () {
-                                  // Already on Loan, do nothing
-                                },
+                                onTap: () {},
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8.0, vertical: 4),
@@ -224,29 +259,6 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                             ),
                           ),
                         ),
-                        Positioned(
-                          left: 37,
-                          top: 24.98,
-                          child: Container(
-                            width: 24,
-                            height: 25.04,
-                            clipBehavior: Clip.antiAlias,
-                            decoration: const BoxDecoration(),
-                          ),
-                        ),
-                        Positioned(
-                          left: 361,
-                          top: 23,
-                          child: Opacity(
-                            opacity: 0.60,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: const BoxDecoration(),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -261,703 +273,217 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
   }
 }
 
-// Loan Portfolio Content (same as before)
 class _LoanPortfolioContent extends StatelessWidget {
+  final List<Map<String, dynamic>> loanData;
+
+  const _LoanPortfolioContent({required this.loanData});
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Card 1
-        Positioned(
-          left: 0,
-          top: 42,
-          child: GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => DraggableScrollableSheet(
-                  initialChildSize: 0.7,
-                  minChildSize: 0.5,
-                  maxChildSize: 0.95,
-                  expand: false,
-                  builder: (context, scrollController) => LoanDetailsScreen(
-                    scrollController: scrollController,
+    // Only show first 3 loan products
+    final displayData = loanData.take(3).toList();
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 40),
+        child: Column(
+          children: List.generate(displayData.length, (index) {
+            final product = displayData[index]['product'];
+            final transactions = displayData[index]['transactions'];
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => DraggableScrollableSheet(
+                      initialChildSize: 0.7,
+                      minChildSize: 0.5,
+                      maxChildSize: 0.95,
+                      expand: false,
+                      builder: (context, scrollController) => LoanDetailsScreen(
+                        scrollController: scrollController,
+                        transactions: transactions,
+                        productName: product.name,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 372,
+                  height: 173,
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ),
-              );
-            },
-            child: Container(
-              width: 372,
-              height: 173,
-              decoration: ShapeDecoration(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          top: 42,
-          child: Opacity(
-            opacity: 0.10,
-            child: Container(
-              width: 372,
-              height: 60,
-              decoration: const ShapeDecoration(
-                color: Color(0xFF0080C6),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 131,
-          child: const Text(
-            '2023-09-19',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 117,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Date',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 279,
-          top: 131,
-          child: const Text(
-            '70,000 BDT',
-            style: TextStyle(
-              color: Color(0xFF05A300),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 255,
-          top: 117,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Amount',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 178,
-          child: const Text(
-            '79,450 BDT',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 164,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Recovered',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 314,
-          top: 178,
-          child: const Text(
-            '0 BDT',
-            style: TextStyle(
-              color: Color(0xFFFF0000),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 316,
-          top: 164,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Overdue',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 57,
-          child: const Text(
-            'Loan Product',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 71,
-          child: SizedBox(
-            width: 126,
-            height: 17,
-            child: const Text(
-              'JAGM0035002300891',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 12,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
-                height: 1.67,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 275,
-          top: 57,
-          child: const Text(
-            'Outstanding',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Color(0xFF0080C6),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 320,
-          top: 73,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              '0 BDT',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 12,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
-                height: 1.17,
-              ),
-            ),
-          ),
-        ),
-        // Card 2
-        Positioned(
-          left: 0,
-          top: 229,
-          child: Container(
-            width: 372,
-            height: 173,
-            decoration: ShapeDecoration(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          top: 229,
-          child: Opacity(
-            opacity: 0.10,
-            child: Container(
-              width: 372,
-              height: 60,
-              decoration: const ShapeDecoration(
-                color: Color(0xFF0080C6),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: Opacity(
+                          opacity: 0.10,
+                          child: Container(
+                            width: 372,
+                            height: 60,
+                            decoration: const ShapeDecoration(
+                              color: Color(0xFF0080C6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(10),
+                                  topRight: Radius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 13,
+                        top: 57,
+                        child: Text(
+                          'Loan Product',
+                          style: TextStyle(
+                            color: Color(0xFF21409A),
+                            fontSize: 14,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 13,
+                        top: 71,
+                        child: Text(
+                          product.name,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1.67,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 275,
+                        top: 57,
+                        child: Text(
+                          'Outstanding',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: Color(0xFF0080C6),
+                            fontSize: 14,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 287,
+                        top: 73,
+                        child: SizedBox(
+                          width: 67,
+                          height: 17,
+                          child: Opacity(
+                            opacity: 0.50,
+                            child: Text(
+                              transactions.isNotEmpty
+                                  ? '${transactions.last.outstanding} BDT'
+                                  : '0 BDT',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontFamily: 'Proxima Nova',
+                                fontWeight: FontWeight.w700,
+                                height: 1.67,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 13,
+                        top: 117,
+                        child: Opacity(
+                          opacity: 0.50,
+                          child: Text(
+                            'Disbursement Date',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 13,
+                        top: 131,
+                        child: Text(
+                          transactions.isNotEmpty
+                              ? transactions.first.transactionDate
+                              : 'N/A',
+                          style: TextStyle(
+                            color: Color(0xFF21409A),
+                            fontSize: 14,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w400,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 255,
+                        top: 117,
+                        child: Opacity(
+                          opacity: 0.50,
+                          child: Text(
+                            'Recovered',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 278,
+                        top: 131,
+                        child: Text(
+                          transactions.isNotEmpty
+                              ? '${transactions.fold(0, (sum, t) => sum + (double.tryParse(t.amount) ?? 0)).toStringAsFixed(0)} BDT'
+                              : '0 BDT',
+                          style: TextStyle(
+                            color: Color(0xFF05A300),
+                            fontSize: 14,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w400,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          }),
         ),
-        Positioned(
-          left: 13,
-          top: 318,
-          child: const Text(
-            '2024-11-06',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 304,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Date',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 278,
-          top: 318,
-          child: const Text(
-            '70,000 BDT',
-            style: TextStyle(
-              color: Color(0xFF05A300),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 255,
-          top: 304,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Amount',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 365,
-          child: const Text(
-            '39,900 BDT',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 351,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Recovered',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 313,
-          top: 365,
-          child: const Text(
-            '0 BDT',
-            style: TextStyle(
-              color: Color(0xFFFF0000),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 313,
-          top: 351,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Overdue',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 244,
-          child: const Text(
-            'Loan Product',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 258,
-          child: const Text(
-            'JAGM0035002300892',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1.67,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 275,
-          top: 244,
-          child: const Text(
-            'Outstanding',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Color(0xFF0080C6),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 287,
-          top: 258,
-          child: SizedBox(
-            width: 67,
-            height: 17,
-            child: Opacity(
-              opacity: 0.50,
-              child: const Text(
-                '39,550 BDT',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 12,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w700,
-                  height: 1.67,
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Card 3
-        Positioned(
-          left: 0,
-          top: 416,
-          child: Container(
-            width: 372,
-            height: 173,
-            decoration: ShapeDecoration(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          top: 416,
-          child: Opacity(
-            opacity: 0.10,
-            child: Container(
-              width: 372,
-              height: 60,
-              decoration: const ShapeDecoration(
-                color: Color(0xFFFF0000),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 505,
-          child: const Text(
-            '2023-09-17',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 491,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Date',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 278,
-          top: 505,
-          child: const Text(
-            '70,000 BDT',
-            style: TextStyle(
-              color: Color(0xFF05A300),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 255,
-          top: 491,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Disbursement Amount',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 552,
-          child: const Text(
-            '9,553 BDT',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 538,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Recovered',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 279,
-          top: 552,
-          child: const Text(
-            '69,897 BDT',
-            style: TextStyle(
-              color: Color(0xFFFF0000),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 313,
-          top: 538,
-          child: Opacity(
-            opacity: 0.50,
-            child: const Text(
-              'Overdue',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 431,
-          child: const Text(
-            'Loan Product',
-            style: TextStyle(
-              color: Color(0xFF21409A),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          top: 445,
-          child: const Text(
-            'JAGM0035015500632',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1.67,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 274,
-          top: 431,
-          child: const Text(
-            'Outstanding',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Color(0xFF0080C6),
-              fontSize: 14,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 285,
-          top: 445,
-          child: SizedBox(
-            width: 67,
-            height: 17,
-            child: Opacity(
-              opacity: 0.50,
-              child: const Text(
-                '69,897 BDT',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 12,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w700,
-                  height: 1.67,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

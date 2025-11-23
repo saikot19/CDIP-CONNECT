@@ -2,33 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
-import 'otp_screen.dart';
-import 'sign_in_screen.dart';
+import 'home_screen.dart';
 
-class SignUpScreen extends ConsumerStatefulWidget {
-  const SignUpScreen({super.key});
+class SignInScreen extends ConsumerStatefulWidget {
+  final String phone;
+  const SignInScreen({super.key, required this.phone});
 
   @override
-  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignUpScreenState extends ConsumerState<SignUpScreen> {
+class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
+  bool _isPasswordVisible = false;
   bool _isLoading = false;
 
-  bool _isValidPhone(String phone) {
-    if (!phone.startsWith('01')) return false;
-    if (phone.length != 11) return false;
-    return RegExp(r'^[0-9]+$').hasMatch(phone);
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.text = widget.phone;
   }
 
-  Future<void> _handleSignUp() async {
+  Future<void> _handleSignIn() async {
     final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
 
-    if (!_isValidPhone(phone)) {
+    if (phone.isEmpty || !RegExp(r'^01\d{9}$').hasMatch(phone)) {
       setState(() {
-        _errorText = 'Enter valid Bangladesh number starting with 01';
+        _errorText = 'Enter valid phone number';
+      });
+      return;
+    }
+
+    if (password.isEmpty || password.length < 6) {
+      setState(() {
+        _errorText = 'Password must be at least 6 characters';
       });
       return;
     }
@@ -39,48 +49,53 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
-      final response = await ApiService.sendOtp(phone);
-      print('Sign Up Response: $response'); // Debug print
+      final response = await ApiService.login(
+        phone: phone,
+        password: password,
+      );
 
-      // Check status - handle both int and string
-      final status = response['status'];
-      final message = response['message'] ?? '';
+      print('Login Response Status: ${response.status}');
 
-      if (status == 200) {
-        // Normal flow: OTP sent, go to OTP screen
-        if (!mounted) return;
+      if (response.status == 200) {
+        print('📌 Login successful, saving session...');
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OTPScreen(phone: phone),
-          ),
-        );
-      } else if ((status == 400 || status == '400') &&
-          message.contains('already set')) {
-        // User already has account, redirect to Sign In
+        // Save session to SharedPreferences and SQLite
+        try {
+          await AuthService.saveUserSession(response);
+          print('✅ Session saved successfully');
+        } catch (e) {
+          print('❌ Error saving session: $e');
+          setState(() {
+            _errorText = 'Error saving session: $e';
+          });
+          return;
+        }
+
         if (!mounted) return;
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SignInScreen(phone: phone),
+            builder: (context) =>
+                HomeScreen(memberName: response.userData.name),
           ),
         );
       } else {
         setState(() {
-          _errorText = message.isNotEmpty ? message : 'Failed to send OTP';
+          _errorText = response.message ?? 'Invalid credentials';
         });
       }
     } catch (e) {
-      print('Error in signup: $e');
+      print('❌ Error in sign in: $e');
       setState(() {
-        _errorText = 'Network error occurred';
+        _errorText = 'Network error occurred: $e';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -94,15 +109,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back Button
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
                 ),
                 const SizedBox(height: 24),
-                // Title
                 const Text(
-                  'Sign Up',
+                  'Sign In',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 30,
@@ -111,9 +124,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Phone Label
                 const Text(
-                  'Give Your Phone Number',
+                  'Phone Number',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 14,
@@ -122,7 +134,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Phone Input Field
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: const Color(0xFF0880C6)),
@@ -141,11 +152,72 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           keyboardType: TextInputType.phone,
                           maxLength: 11,
                           decoration: const InputDecoration(
-                            hintText: '01XXXXXXXXX',
                             border: InputBorder.none,
                             counterText: '',
                             contentPadding: EdgeInsets.symmetric(
                                 vertical: 14, horizontal: 8),
+                          ),
+                          style: const TextStyle(
+                            color: Color(0xFF3A3A3A),
+                            fontSize: 16,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Password',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFF0880C6)),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 12),
+                        child: Icon(Icons.lock, color: Color(0xFF0880C6)),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _passwordController,
+                          obscureText: !_isPasswordVisible,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter your password',
+                            hintStyle: const TextStyle(
+                              color: Color(0xFFB0B0B0),
+                              fontSize: 16,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 8),
+                            suffixIcon: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              },
+                              child: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: const Color(0xFF0880C6),
+                              ),
+                            ),
                           ),
                           style: const TextStyle(
                             color: Color(0xFF3A3A3A),
@@ -172,12 +244,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                   ),
                 const SizedBox(height: 32),
-                // SIGN UP Button
                 SizedBox(
                   width: double.infinity,
                   height: 49,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSignUp,
+                    onPressed: _isLoading ? null : _handleSignIn,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
@@ -189,7 +260,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            'SIGN UP',
+                            'SIGN IN',
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: 'Proxima Nova',
@@ -199,69 +270,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Already have account - Made Responsive
                 Center(
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    children: [
-                      const Text(
-                        'Have already any account? ',
-                        style: TextStyle(
-                          color: Color(0xFF3A3A3A),
-                          fontSize: 12,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w400,
-                        ),
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to forgot password
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Color(0xFF0080C6),
+                        fontSize: 13,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w700,
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const SignInScreen(phone: ''),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: Color(0xFF0080C6),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 120),
-                // Powered By
-                Center(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        const TextSpan(
-                          text: 'Powered By ',
-                          style: TextStyle(
-                            color: Color(0xFF3A3A3A),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const TextSpan(
-                          text: 'CDIP IT SERVICES LIMITED',
-                          style: TextStyle(
-                            color: Color(0xFF0278C0),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -276,6 +297,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

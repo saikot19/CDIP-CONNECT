@@ -1,29 +1,35 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
+import '../services/auth_service.dart';
 import 'loan_portfolio_screen.dart' as loan;
 import 'savings_portfolio_screen.dart';
-import '../widgets/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String memberName;
+  const HomeScreen({super.key, required this.memberName});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  // Replace the previous controllers with a single list to track card order
-  final List<int> _cardOrder = [0, 1, 2]; // 0:Outstanding, 1:Overdue, 2:Savings
+  final List<int> _cardOrder = [0, 1, 2];
+  late Future<Map<String, dynamic>?> _loginSummaryFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loginSummaryFuture = DatabaseHelper().getLoginSummary();
+  }
 
   void _onCardTap(int index) {
     setState(() {
-      // Move the tapped card to the back by rotating the list
       final tappedCard = _cardOrder.removeAt(index);
       _cardOrder.insert(0, tappedCard);
     });
   }
 
-  // Update the _buildCard method to modify positioning
   Widget _buildCard({
     required String title,
     required String amount,
@@ -32,9 +38,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required int index,
   }) {
     final positions = [
-      Offset(0, 10), // Center card (Outstanding)
-      Offset(60, 15), // Right card (Overdue)
-      Offset(100, 20), // Left card (Savings)
+      Offset(0, 10),
+      Offset(60, 15),
+      Offset(100, 20),
     ];
 
     final currentPosition = _cardOrder.indexOf(index);
@@ -167,13 +173,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // User Name
+          // User Name from Auth
           Positioned(
             left: 20,
             top: 128,
-            child: const Text(
-              'Shahrin Zaman',
-              style: TextStyle(
+            child: Text(
+              widget.memberName.toUpperCase(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 26,
                 fontFamily: 'Proxima Nova',
@@ -208,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(
             left: 19,
             top: 209,
-            child: Text(
+            child: const Text(
               'Your Portfolio Summary',
               style: TextStyle(
                 color: Colors.black,
@@ -220,9 +226,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            left: 20,
+            left: 19,
             top: 529,
-            child: Text(
+            child: const Text(
               'Manage Portfolio',
               style: TextStyle(
                 color: Colors.black,
@@ -260,16 +266,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            left: 6, // Centered horizontally (adjust as needed)
+            left: 6,
             top: 670,
-            bottom: 80, // Just above the container at 698
+            bottom: 80,
             child: Image.asset(
               'assets/logo/C-5 1@2x.png',
-              width: 400, // Adjust size as needed
+              width: 400,
               height: 80,
             ),
           ),
-
           Positioned(
             left: 189.50,
             top: 824,
@@ -336,43 +341,68 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          // Portfolio Cards with Data
           Positioned(
             left: 34,
             top: 253,
-            child: Container(
-              width: 412,
-              height: 300, // Increased height to accommodate the pyramid layout
-              child: Stack(
-                children: [
-                  _buildCard(
-                    title: 'Outstanding',
-                    amount: '1,09,447 BDT',
-                    color: const Color(0xFF0080C6),
-                    imagePath: 'assets/logo/flowbite_chart-pie-outline.png',
-                    index: 0,
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future: _loginSummaryFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SizedBox(
+                    width: 412,
+                    height: 300,
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                final summary = snapshot.data;
+                String outstanding =
+                    summary?['total_outstanding_after_transaction']
+                            ?.toString() ??
+                        '0';
+                String overdue =
+                    summary?['total_transaction_amount']?.toString() ?? '0';
+                String savings = summary?['final_balance']?.toString() ?? '0';
+
+                return Container(
+                  width: 412,
+                  height: 300,
+                  child: Stack(
+                    children: [
+                      _buildCard(
+                        title: 'Outstanding',
+                        amount: '$outstanding BDT',
+                        color: const Color(0xFF0080C6),
+                        imagePath: 'assets/logo/flowbite_chart-pie-outline.png',
+                        index: 0,
+                      ),
+                      _buildCard(
+                        title: 'Overdue',
+                        amount: '$overdue BDT',
+                        color: const Color(0xFFF27024),
+                        imagePath: 'assets/logo/zondicons_minus-outline.png',
+                        index: 1,
+                      ),
+                      _buildCard(
+                        title: 'Savings',
+                        amount: '$savings BDT',
+                        color: const Color(0xFF05A300),
+                        imagePath: 'assets/logo/Group.png',
+                        index: 2,
+                      ),
+                    ].reversed.toList(),
                   ),
-                  _buildCard(
-                    title: 'Overdue',
-                    amount: '69,897 BDT',
-                    color: const Color(0xFFF27024),
-                    imagePath: 'assets/logo/zondicons_minus-outline.png',
-                    index: 1,
-                  ),
-                  _buildCard(
-                    title: 'Savings',
-                    amount: '15,400 BDT',
-                    color: const Color(0xFF05A300),
-                    imagePath: 'assets/logo/Group.png',
-                    index: 2,
-                  ),
-                ].reversed.toList(),
-              ),
+                );
+              },
             ),
           ),
           Positioned(
             left: 45,
             top: 660,
-            child: Text(
+            child: const Text(
               'Loan',
               style: TextStyle(
                 color: Colors.black,
@@ -393,7 +423,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const loan.LoanPortfolioScreen(),
-                    settings: RouteSettings(arguments: true), // showLoan = true
                   ),
                 );
               },
@@ -414,7 +443,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       width: 36,
                       height: 36,
                     ),
-                    const SizedBox(height: 4),
                   ],
                 ),
               ),
@@ -423,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(
             left: 186,
             top: 660,
-            child: Text(
+            child: const Text(
               'Savings',
               style: TextStyle(
                 color: Colors.black,
@@ -444,8 +472,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const SavingsPortfolioScreen(),
-                    settings:
-                        RouteSettings(arguments: false), // showLoan = false
                   ),
                 );
               },
@@ -466,7 +492,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       width: 32,
                       height: 32,
                     ),
-                    const SizedBox(height: 4),
                   ],
                 ),
               ),
@@ -475,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(
             left: 333,
             top: 660,
-            child: Text(
+            child: const Text(
               'Referral',
               style: TextStyle(
                 color: Colors.black,
@@ -507,7 +532,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     width: 32,
                     height: 32,
                   ),
-                  const SizedBox(height: 4),
                 ],
               ),
             ),
@@ -537,7 +561,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  // Home icon (center left)
                   Positioned(
                     left: 37,
                     top: 28,
@@ -548,7 +571,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       fit: BoxFit.contain,
                     ),
                   ),
-                  // Profile icon (center right)
                   Positioned(
                     right: 37,
                     top: 28,

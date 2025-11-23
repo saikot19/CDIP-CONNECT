@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/splash_provider.dart';
+import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'sign_up.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +15,36 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    ref.read(splashProvider.notifier).initializeApp();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final isLoggedIn = await AuthService.isLoggedIn();
+
+        if (isLoggedIn) {
+          final memberName = await AuthService.getMemberName();
+
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(memberName: memberName),
+            ),
+          );
+        } else {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const SignUpScreen()),
+          );
+        }
+      } catch (e) {
+        print('Error in splash: $e');
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SignUpScreen()),
+        );
+      }
+    });
   }
 
   @override

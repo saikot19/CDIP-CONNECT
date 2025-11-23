@@ -145,7 +145,10 @@ class SetPasswordScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const HomeScreen(
+                              memberName: '',
+                            )),
                     (route) => false,
                   );
                 },

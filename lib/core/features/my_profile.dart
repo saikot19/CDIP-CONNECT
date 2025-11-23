@@ -1,5 +1,7 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'sign_up.dart';
 
 class MyProfileScreen extends StatelessWidget {
   const MyProfileScreen({super.key});
@@ -422,15 +424,30 @@ class MyProfileScreen extends StatelessWidget {
             Positioned(
               left: 79,
               top: 649,
-              child: Text(
-                'Logout',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFFFF737B),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1,
+              child: GestureDetector(
+                onTap: () async {
+                  // Clear session and database
+                  await AuthService.clear();
+
+                  if (!context.mounted) return;
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SignUpScreen()),
+                    (route) => false,
+                  );
+                },
+                child: const Text(
+                  'Logout',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFFF737B),
+                    fontSize: 13,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
                 ),
               ),
             ),
