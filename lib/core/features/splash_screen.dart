@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
@@ -16,35 +18,57 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        final isLoggedIn = await AuthService.isLoggedIn();
+      await _checkLoginStatus();
+    });
+  }
 
-        if (isLoggedIn) {
-          final memberName = await AuthService.getMemberName();
+  Future<void> _checkLoginStatus() async {
+    await Future.delayed(const Duration(seconds: 2));
 
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomeScreen(memberName: memberName),
-            ),
-          );
-        } else {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const SignUpScreen()),
-          );
-        }
-      } catch (e) {
-        print('Error in splash: $e');
+    try {
+      print('🔄 Checking login status...');
+
+      final isLoggedIn = await AuthService.isLoggedIn();
+
+      if (isLoggedIn) {
+        print('✅ User is logged in');
+
+        final memberName = await AuthService.getMemberName();
+        final allSummary = await AuthService.getUserAllSummary();
+
+        print(
+            '📊 Loaded: ${allSummary.loans.length} loans, ${allSummary.savings.length} savings');
+
         if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(
+              memberName: memberName,
+              allSummary: allSummary,
+            ),
+          ),
+        );
+      } else {
+        print('⚠️ User not logged in');
+
+        if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const SignUpScreen()),
         );
       }
-    });
+    } catch (e) {
+      print('❌ Error in splash: $e');
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const SignUpScreen()),
+      );
+    }
   }
 
   @override
@@ -68,6 +92,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   fit: BoxFit.contain,
                 ),
               ),
+            ),
+            Center(
+              child: CircularProgressIndicator(),
             ),
           ],
         ),

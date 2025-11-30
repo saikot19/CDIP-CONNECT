@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/login_response_model.dart';
 import 'home_screen.dart';
 
 class PasswordResetPopup extends StatelessWidget {
@@ -67,9 +68,17 @@ class PasswordResetPopup extends StatelessWidget {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const HomeScreen(
-                              memberName: '',
-                            )),
+                      builder: (context) => HomeScreen(
+                        memberName: '',
+                        allSummary: AllSummary(
+                          memberId: '',
+                          loanCount: 0,
+                          loans: [],
+                          savingCount: 0,
+                          savings: [],
+                        ),
+                      ),
+                    ),
                     (route) => false,
                   );
                 },

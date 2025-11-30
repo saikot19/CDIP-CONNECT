@@ -1,11 +1,14 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
+import '../services/auth_service.dart';
 import 'savings_portfolio_screen.dart';
 import 'loan_details.dart';
 
 class LoanPortfolioScreen extends StatefulWidget {
-  const LoanPortfolioScreen({super.key});
+  final AllSummary allSummary;
+
+  const LoanPortfolioScreen({super.key, required this.allSummary});
 
   @override
   State<LoanPortfolioScreen> createState() => _LoanPortfolioScreenState();
@@ -13,30 +16,6 @@ class LoanPortfolioScreen extends StatefulWidget {
 
 class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
   bool showLoan = true;
-  late Future<List<Map<String, dynamic>>> _loanProductsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLoanData();
-  }
-
-  void _loadLoanData() {
-    _loanProductsFuture = _getLoanProductsWithTransactions();
-  }
-
-  Future<List<Map<String, dynamic>>> _getLoanProductsWithTransactions() async {
-    final db = DatabaseHelper();
-    final products = await db.getLoanProducts();
-    final transactions = await db.getLoanTransactions();
-
-    return List.generate(products.length, (index) {
-      return {
-        'product': products[index],
-        'transactions': transactions,
-      };
-    });
-  }
 
   void switchToSavings() {
     setState(() {
@@ -45,7 +24,10 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
     Future.delayed(const Duration(milliseconds: 350), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SavingsPortfolioScreen()),
+        MaterialPageRoute(
+          builder: (context) =>
+              SavingsPortfolioScreen(allSummary: widget.allSummary),
+        ),
       );
     });
   }
@@ -54,6 +36,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final loans = widget.allSummary.loans;
 
     return Scaffold(
       body: Container(
@@ -112,11 +95,21 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
             Positioned(
               left: screenWidth * 0.05,
               top: screenHeight * 0.06,
-              child: Container(
-                width: screenWidth * 0.1,
-                height: screenWidth * 0.1,
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: screenWidth * 0.1,
+                  height: screenWidth * 0.1,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: screenWidth * 0.06,
+                  ),
+                ),
               ),
             ),
             // Content area
@@ -128,30 +121,22 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                 height: screenHeight * 0.68,
                 child: Stack(
                   children: [
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _loanProductsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(
-                            child: Text('No loan data available'),
-                          );
-                        }
-
-                        final loanData = snapshot.data!;
-                        return _LoanPortfolioContent(
-                          loanData: loanData,
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                        );
-                      },
-                    ),
+                    // Loan list
+                    loans.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No active loans',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: screenWidth * 0.04,
+                              ),
+                            ),
+                          )
+                        : _LoanPortfolioContent(
+                            loans: loans,
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                          ),
                     // Tab switcher
                     Positioned(
                       left: 0,
@@ -234,51 +219,33 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
             Positioned(
               left: 0,
               bottom: 0,
-              child: Container(
-                width: screenWidth,
-                height: screenHeight * 0.1,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 15,
-                      offset: Offset(0, 4),
-                      spreadRadius: 0,
-                    )
-                  ],
-                ),
+              child: BottomNavBar(
+                isHome: false,
+                memberName: '',
+                allSummary: widget.allSummary,
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
+      bottomNavigationBar: null,
     );
   }
 }
 
 class _LoanPortfolioContent extends StatelessWidget {
-  final List<Map<String, dynamic>> loanData;
+  final List<UserLoan> loans;
   final double screenWidth;
   final double screenHeight;
 
   const _LoanPortfolioContent({
-    required this.loanData,
+    required this.loans,
     required this.screenWidth,
     required this.screenHeight,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Only show first 3 loan products
-    final displayData = loanData.take(3).toList();
     final cardHeight = screenHeight * 0.22;
     final horizontalPadding = screenWidth * 0.02;
 
@@ -286,27 +253,19 @@ class _LoanPortfolioContent extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(top: screenHeight * 0.05),
         child: Column(
-          children: List.generate(displayData.length, (index) {
-            final product = displayData[index]['product'];
-            final transactions = displayData[index]['transactions'];
+          children: List.generate(loans.length, (index) {
+            final loan = loans[index];
 
             return Padding(
               padding: EdgeInsets.only(bottom: screenHeight * 0.025),
               child: GestureDetector(
                 onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => DraggableScrollableSheet(
-                      initialChildSize: 0.7,
-                      minChildSize: 0.5,
-                      maxChildSize: 0.95,
-                      expand: false,
-                      builder: (context, scrollController) => LoanDetailsScreen(
-                        scrollController: scrollController,
-                        transactions: transactions,
-                        productName: product.name,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoanDetailsScreen(
+                        loanId: loan.loanId,
+                        productName: loan.loanProductName,
                       ),
                     ),
                   );
@@ -327,204 +286,224 @@ class _LoanPortfolioContent extends StatelessWidget {
                       )
                     ],
                   ),
-                  child: Column(
+                  child: Stack(
                     children: [
-                      // Blue top portion (shows Loan Product, Name, Outstanding)
-                      Container(
-                        height: cardHeight * 0.42,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF0080C6),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(10),
-                            topRight: Radius.circular(10),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: horizontalPadding,
-                              vertical: cardHeight * 0.08),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Left side: labels and product name
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Loan Product',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: screenWidth * 0.032,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w600,
-                                        height: 1,
-                                      ),
-                                    ),
-                                    SizedBox(height: cardHeight * 0.03),
-                                    Text(
-                                      product.name,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.035,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.15,
-                                      ),
-                                    ),
-                                  ],
+                      // Header background
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: Opacity(
+                          opacity: 0.10,
+                          child: Container(
+                            width: screenWidth * 0.9,
+                            height: cardHeight * 0.35,
+                            decoration: ShapeDecoration(
+                              color: const Color(0xFF0080C6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(10),
+                                  topRight: Radius.circular(10),
                                 ),
                               ),
-                              // Right side: Outstanding label & amount
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Outstanding',
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.95),
-                                      fontSize: screenWidth * 0.03,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w700,
-                                      height: 1,
-                                    ),
-                                  ),
-                                  SizedBox(height: cardHeight * 0.03),
-                                  SizedBox(
-                                    width: screenWidth * 0.32,
-                                    child: Text(
-                                      transactions.isNotEmpty
-                                          ? '${transactions.last.outstanding} BDT'
-                                          : '0 BDT',
-                                      textAlign: TextAlign.right,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.035,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.15,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-
-                      // White bottom portion (divider, Disbursement Date, Recovered)
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(10),
-                              bottomRight: Radius.circular(10),
+                      // Loan Product Label
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.09,
+                        child: Text(
+                          'Loan Product',
+                          style: TextStyle(
+                            color: const Color(0xFF21409A),
+                            fontSize: screenWidth * 0.035,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      // Loan Product Name
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.17,
+                        child: SizedBox(
+                          width: screenWidth * 0.5,
+                          child: Text(
+                            loan.loanProductName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth * 0.03,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w700,
+                              height: 1.67,
                             ),
                           ),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: horizontalPadding,
-                                vertical: cardHeight * 0.05),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Divider
-                                Container(
-                                  height: 1,
-                                  color: Colors.black.withOpacity(0.06),
-                                ),
-                                SizedBox(height: cardHeight * 0.04),
-                                Row(
-                                  children: [
-                                    // Left: Disbursement Date
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Opacity(
-                                            opacity: 0.5,
-                                            child: Text(
-                                              'Disbursement Date',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: screenWidth * 0.025,
-                                                fontFamily: 'Proxima Nova',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: cardHeight * 0.02),
-                                          Text(
-                                            transactions.isNotEmpty
-                                                ? transactions
-                                                    .first.transactionDate
-                                                : 'N/A',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: const Color(0xFF21409A),
-                                              fontSize: screenWidth * 0.033,
-                                              fontFamily: 'Proxima Nova',
-                                              fontWeight: FontWeight.w500,
-                                              height: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // Right: Recovered
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Opacity(
-                                            opacity: 0.5,
-                                            child: Text(
-                                              'Recovered',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: screenWidth * 0.025,
-                                                fontFamily: 'Proxima Nova',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: cardHeight * 0.02),
-                                          Text(
-                                            transactions.isNotEmpty
-                                                ? '${transactions.fold(0, (sum, t) => sum + (double.tryParse(t.amount) ?? 0)).toStringAsFixed(0)} BDT'
-                                                : '0 BDT',
-                                            textAlign: TextAlign.right,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: const Color(0xFF05A300),
-                                              fontSize: screenWidth * 0.033,
-                                              fontFamily: 'Proxima Nova',
-                                              fontWeight: FontWeight.w500,
-                                              height: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                        ),
+                      ),
+                      // Outstanding Label (Right side)
+                      Positioned(
+                        right: horizontalPadding,
+                        top: cardHeight * 0.09,
+                        child: Text(
+                          'Outstanding',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: const Color(0xFF0080C6),
+                            fontSize: screenWidth * 0.035,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                      // Outstanding Amount
+                      Positioned(
+                        right: horizontalPadding,
+                        top: cardHeight * 0.18,
+                        child: SizedBox(
+                          width: screenWidth * 0.35,
+                          child: Text(
+                            '${loan.outstandingAmount.toStringAsFixed(0)} BDT',
+                            textAlign: TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth * 0.03,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w700,
+                              height: 1.17,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Divider
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.43,
+                        right: horizontalPadding,
+                        child: Container(
+                          height: 1,
+                          color: Colors.black.withOpacity(0.1),
+                        ),
+                      ),
+                      // Disbursement Date Label
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.51,
+                        child: Opacity(
+                          opacity: 0.50,
+                          child: Text(
+                            'Disburse Date',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth * 0.025,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Disbursement Date
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.60,
+                        child: SizedBox(
+                          width: screenWidth * 0.4,
+                          child: Text(
+                            loan.disburseDate,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFF21409A),
+                              fontSize: screenWidth * 0.035,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Recovered Label
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.70,
+                        child: Opacity(
+                          opacity: 0.50,
+                          child: Text(
+                            'Recovered',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth * 0.025,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Recovered Amount
+                      Positioned(
+                        left: horizontalPadding,
+                        top: cardHeight * 0.79,
+                        child: SizedBox(
+                          width: screenWidth * 0.35,
+                          child: Text(
+                            '${loan.totalRecoveredAmount.toStringAsFixed(0)} BDT',
+                            textAlign: TextAlign.left,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFF21409A),
+                              fontSize: screenWidth * 0.035,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Overdue Label
+                      Positioned(
+                        right: horizontalPadding,
+                        top: cardHeight * 0.70,
+                        child: Opacity(
+                          opacity: 0.50,
+                          child: Text(
+                            'Overdue',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth * 0.025,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Overdue Amount
+                      Positioned(
+                        right: horizontalPadding,
+                        top: cardHeight * 0.79,
+                        child: SizedBox(
+                          width: screenWidth * 0.35,
+                          child: Text(
+                            '0 BDT',
+                            textAlign: TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFFFF0000),
+                              fontSize: screenWidth * 0.035,
+                              fontFamily: 'Proxima Nova',
+                              fontWeight: FontWeight.w400,
+                              height: 1,
                             ),
                           ),
                         ),

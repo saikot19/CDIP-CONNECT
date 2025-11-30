@@ -76,8 +76,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                HomeScreen(memberName: response.userData.name),
+            builder: (context) => HomeScreen(
+              memberName: response.userData.name,
+              allSummary: response.allSummary,
+            ),
           ),
         );
       } else {

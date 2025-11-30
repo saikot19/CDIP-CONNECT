@@ -1,13 +1,20 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'loan_portfolio_screen.dart' as loan;
 import 'savings_portfolio_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String memberName;
-  const HomeScreen({super.key, required this.memberName});
+  final AllSummary allSummary;
+
+  const HomeScreen({
+    super.key,
+    required this.memberName,
+    required this.allSummary,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,6 +28,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _loginSummaryFuture = DatabaseHelper().getLoginSummary();
+  }
+
+  // Get dynamic greeting based on time of day
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else if (hour < 21) {
+      return 'Good Evening';
+    } else {
+      return 'Good Night';
+    }
   }
 
   void _onCardTap(int index) {
@@ -158,13 +180,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // Greeting Text
+          // Greeting Text (Dynamic)
           Positioned(
             left: 20,
             top: 105,
-            child: const Text(
-              'Good Morning,',
-              style: TextStyle(
+            child: Text(
+              '${_getGreeting()},',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontFamily: 'Proxima Nova',
@@ -173,19 +195,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // User Name from Auth
+          // User Name from SharedPreferences
           Positioned(
             left: 20,
             top: 128,
-            child: Text(
-              widget.memberName.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
-                height: 0.77,
-              ),
+            child: FutureBuilder<String>(
+              future: AuthService.getMemberName(),
+              builder: (context, snapshot) {
+                final memberName =
+                    snapshot.data ?? widget.memberName.toUpperCase();
+                return Text(
+                  memberName.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w700,
+                    height: 0.77,
+                  ),
+                );
+              },
             ),
           ),
           Positioned(
@@ -422,7 +451,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const loan.LoanPortfolioScreen(),
+                    builder: (context) => loan.LoanPortfolioScreen(
+                      allSummary: widget.allSummary,
+                    ),
                   ),
                 );
               },
@@ -471,7 +502,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const SavingsPortfolioScreen(),
+                    builder: (context) => SavingsPortfolioScreen(
+                      allSummary: widget.allSummary,
+                    ),
                   ),
                 );
               },
@@ -585,7 +618,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          const BottomNavBar(isHome: true),
+          BottomNavBar(
+            isHome: true,
+            memberName: widget.memberName,
+            allSummary: widget.allSummary,
+          ),
         ],
       ),
     );

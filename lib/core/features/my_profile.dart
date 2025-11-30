@@ -1,5 +1,7 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'sign_up.dart';
 
@@ -34,12 +36,15 @@ class MyProfileScreen extends StatelessWidget {
             Positioned(
               left: 20,
               top: 53,
-              child: Container(
-                width: 40,
-                height: 40,
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(),
-                child: Stack(),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: const BoxDecoration(),
+                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
+                ),
               ),
             ),
             // Profile Picture Circle BG
@@ -76,88 +81,126 @@ class MyProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Name
+            // Name from DB
             Positioned(
               left: 118,
               top: 125,
               child: SizedBox(
                 width: 132,
                 height: 26,
-                child: Text(
-                  'Shahrin Zaman',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: const Color(0xFF3A3A3A),
-                    fontSize: 16,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
-                    height: 0.81,
-                  ),
+                child: FutureBuilder<String>(
+                  future: AuthService.getMemberName(),
+                  builder: (context, snapshot) {
+                    final name = snapshot.data ?? 'User';
+                    return Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: const Color(0xFF3A3A3A),
+                        fontSize: 16,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w600,
+                        height: 0.81,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-            // Member Code
+            // Member Code from DB
             Positioned(
               left: 126,
               top: 146,
-              child: Text.rich(
-                TextSpan(
-                  children: [
+              child: FutureBuilder<Map<String, dynamic>?>(
+                future: DatabaseHelper().getLoginResponse(),
+                builder: (context, snapshot) {
+                  String memberId = '000000000000';
+
+                  if (snapshot.hasData && snapshot.data != null) {
+                    try {
+                      final response = LoginResponse.fromJson(snapshot.data!);
+                      memberId = response.userData.id;
+                    } catch (e) {
+                      print('Error parsing member ID: $e');
+                    }
+                  }
+
+                  return Text.rich(
                     TextSpan(
-                      text: 'Member Code:',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
-                        fontSize: 12,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w700,
-                        height: 1.08,
-                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Member Code:',
+                          style: TextStyle(
+                            color: const Color(0xFF3A3A3A),
+                            fontSize: 12,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1.08,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' $memberId',
+                          style: TextStyle(
+                            color: const Color(0xFF3A3A3A),
+                            fontSize: 12,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w400,
+                            height: 1.08,
+                          ),
+                        ),
+                      ],
                     ),
-                    TextSpan(
-                      text: ' 003500230089',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
-                        fontSize: 12,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
-                        height: 1.08,
-                      ),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
+                  );
+                },
               ),
             ),
-            // Branch Name
+            // Branch Name from DB
             Positioned(
               left: 125,
               top: 166,
-              child: Text.rich(
-                TextSpan(
-                  children: [
+              child: FutureBuilder<Map<String, dynamic>?>(
+                future: DatabaseHelper().getLoginResponse(),
+                builder: (context, snapshot) {
+                  String branchName = 'N/A';
+
+                  if (snapshot.hasData && snapshot.data != null) {
+                    try {
+                      final response = LoginResponse.fromJson(snapshot.data!);
+                      branchName = response.userData.branchName;
+                    } catch (e) {
+                      print('Error parsing branch name: $e');
+                    }
+                  }
+
+                  return Text.rich(
                     TextSpan(
-                      text: 'Branch Name:',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
-                        fontSize: 12,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w700,
-                        height: 1.08,
-                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Branch Name:',
+                          style: TextStyle(
+                            color: const Color(0xFF3A3A3A),
+                            fontSize: 12,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w700,
+                            height: 1.08,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' $branchName',
+                          style: TextStyle(
+                            color: const Color(0xFF3A3A3A),
+                            fontSize: 12,
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w400,
+                            height: 1.08,
+                          ),
+                        ),
+                      ],
                     ),
-                    TextSpan(
-                      text: ' Bhaberchar',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
-                        fontSize: 12,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
-                        height: 1.08,
-                      ),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
+                  );
+                },
               ),
             ),
             // Divider
@@ -206,7 +249,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 25,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/fluent_money-hand-24-regular.png',
+                    width: 25,
+                    height: 25,
+                  ),
                 ),
               ),
             ),
@@ -236,7 +283,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 16,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_language.png',
+                    width: 16,
+                    height: 16,
+                  ),
                 ),
               ),
             ),
@@ -266,7 +317,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 20,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_location.png',
+                    width: 20,
+                    height: 20,
+                  ),
                 ),
               ),
             ),
@@ -296,7 +351,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 24.44,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_star.png',
+                    width: 24.44,
+                    height: 24.44,
+                  ),
                 ),
               ),
             ),
@@ -326,7 +385,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 17.78,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_share.png',
+                    width: 17.78,
+                    height: 17.78,
+                  ),
                 ),
               ),
             ),
@@ -356,7 +419,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 20,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_info.png',
+                    width: 20,
+                    height: 20,
+                  ),
                 ),
               ),
             ),
@@ -386,7 +453,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 22.22,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_privacy.png',
+                    width: 22.22,
+                    height: 22.22,
+                  ),
                 ),
               ),
             ),
@@ -416,7 +487,11 @@ class MyProfileScreen extends StatelessWidget {
                   height: 22.22,
                   clipBehavior: Clip.antiAlias,
                   decoration: const BoxDecoration(),
-                  child: Stack(),
+                  child: Image.asset(
+                    'assets/logo/iconoir_doc.png',
+                    width: 22.22,
+                    height: 22.22,
+                  ),
                 ),
               ),
             ),
@@ -427,7 +502,7 @@ class MyProfileScreen extends StatelessWidget {
               child: GestureDetector(
                 onTap: () async {
                   // Clear session and database
-                  await AuthService.clear();
+                  await AuthService.logout();
 
                   if (!context.mounted) return;
 
@@ -459,11 +534,25 @@ class MyProfileScreen extends StatelessWidget {
                 height: 22.22,
                 clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(),
-                child: Stack(),
+                child: Image.asset(
+                  'assets/logo/iconoir_logout.png',
+                  width: 22.22,
+                  height: 22.22,
+                ),
               ),
             ),
             // Bottom Navigation Bar
-            const BottomNavBar(isProfile: true),
+            BottomNavBar(
+              isProfile: true,
+              memberName: '',
+              allSummary: AllSummary(
+                memberId: '',
+                loanCount: 0,
+                loans: [],
+                savingCount: 0,
+                savings: [],
+              ),
+            ),
           ],
         ),
       ),

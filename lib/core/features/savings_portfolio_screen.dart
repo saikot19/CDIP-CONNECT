@@ -1,42 +1,24 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
 import 'loan_portfolio_screen.dart';
 import 'savings_details.dart';
 
 class SavingsPortfolioScreen extends StatefulWidget {
-  const SavingsPortfolioScreen({super.key});
+  final AllSummary allSummary;
+
+  const SavingsPortfolioScreen({super.key, required this.allSummary});
 
   @override
   State<SavingsPortfolioScreen> createState() => _SavingsPortfolioScreenState();
 }
 
 class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
-  late Future<List<Map<String, dynamic>>> _savingsTransactionsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavingsData();
-  }
-
-  void _loadSavingsData() {
-    _savingsTransactionsFuture = _getSavingsTransactions();
-  }
-
-  Future<List<Map<String, dynamic>>> _getSavingsTransactions() async {
-    final db = DatabaseHelper();
-    final transactions = await db.getSavingTransactions();
-
-    return [
-      {'productName': 'Savings Product 1', 'transactions': transactions},
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final savings = widget.allSummary.savings;
 
     return Scaffold(
       body: Container(
@@ -90,15 +72,25 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
                 ),
               ),
             ),
-            // Back button placeholder
+            // Back button
             Positioned(
               left: screenWidth * 0.05,
               top: screenHeight * 0.06,
-              child: Container(
-                width: screenWidth * 0.1,
-                height: screenWidth * 0.1,
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: screenWidth * 0.1,
+                  height: screenWidth * 0.1,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: screenWidth * 0.06,
+                  ),
+                ),
               ),
             ),
             // Content area
@@ -110,30 +102,22 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
                 height: screenHeight * 0.68,
                 child: Stack(
                   children: [
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _savingsTransactionsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(
-                            child: Text('No savings data available'),
-                          );
-                        }
-
-                        final savingsData = snapshot.data!;
-                        return _SavingsPortfolioContent(
-                          savingsData: savingsData,
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                        );
-                      },
-                    ),
+                    // Savings list
+                    savings.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No savings accounts',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: screenWidth * 0.04,
+                              ),
+                            ),
+                          )
+                        : _SavingsPortfolioContent(
+                            savings: savings,
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                          ),
                     // Tab switcher
                     Positioned(
                       left: 0,
@@ -145,8 +129,8 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const LoanPortfolioScreen(),
+                                  builder: (context) => LoanPortfolioScreen(
+                                      allSummary: widget.allSummary),
                                 ),
                               );
                             },
@@ -219,43 +203,26 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
             Positioned(
               left: 0,
               bottom: 0,
-              child: Container(
-                width: screenWidth,
-                height: screenHeight * 0.1,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 15,
-                      offset: Offset(0, 4),
-                      spreadRadius: 0,
-                    )
-                  ],
-                ),
+              child: BottomNavBar(
+                isHome: false,
+                memberName: '',
+                allSummary: widget.allSummary,
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
     );
   }
 }
 
 class _SavingsPortfolioContent extends StatelessWidget {
-  final List<Map<String, dynamic>> savingsData;
+  final List<UserSaving> savings;
   final double screenWidth;
   final double screenHeight;
 
   const _SavingsPortfolioContent({
-    required this.savingsData,
+    required this.savings,
     required this.screenWidth,
     required this.screenHeight,
   });
@@ -269,28 +236,19 @@ class _SavingsPortfolioContent extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(top: screenHeight * 0.05),
         child: Column(
-          children: List.generate(savingsData.length, (index) {
-            final productName = savingsData[index]['productName'];
-            final transactions = savingsData[index]['transactions'];
+          children: List.generate(savings.length, (index) {
+            final saving = savings[index];
 
             return Padding(
               padding: EdgeInsets.only(bottom: screenHeight * 0.025),
               child: GestureDetector(
                 onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => DraggableScrollableSheet(
-                      initialChildSize: 0.7,
-                      minChildSize: 0.5,
-                      maxChildSize: 0.95,
-                      expand: false,
-                      builder: (context, scrollController) =>
-                          SavingsDetailsScreen(
-                        scrollController: scrollController,
-                        transactions: transactions,
-                        productName: productName,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SavingsDetailsScreen(
+                        savingsId: saving.savingsId,
+                        productName: saving.productName ?? 'Savings Account',
                       ),
                     ),
                   );
@@ -337,7 +295,7 @@ class _SavingsPortfolioContent extends StatelessWidget {
                       // Savings Product Label
                       Positioned(
                         left: horizontalPadding,
-                        top: cardHeight * 0.40,
+                        top: cardHeight * 0.09,
                         child: Text(
                           'Savings Product',
                           style: TextStyle(
@@ -352,19 +310,19 @@ class _SavingsPortfolioContent extends StatelessWidget {
                       // Product Name
                       Positioned(
                         left: horizontalPadding,
-                        top: cardHeight * 0.52,
+                        top: cardHeight * 0.17,
                         child: SizedBox(
                           width: screenWidth * 0.5,
                           child: Text(
-                            productName,
-                            maxLines: 1,
+                            saving.productName ?? saving.code,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: screenWidth * 0.03,
                               fontFamily: 'Proxima Nova',
                               fontWeight: FontWeight.w700,
-                              height: 1.2,
+                              height: 1.67,
                             ),
                           ),
                         ),
@@ -372,14 +330,14 @@ class _SavingsPortfolioContent extends StatelessWidget {
                       // Opening Date Label (Right)
                       Positioned(
                         right: horizontalPadding,
-                        top: cardHeight * 0.40,
+                        top: cardHeight * 0.09,
                         child: Opacity(
                           opacity: 0.50,
                           child: Text(
                             'Opening Date',
                             style: TextStyle(
                               color: Colors.black,
-                              fontSize: screenWidth * 0.025,
+                              fontSize: screenWidth * 0.035,
                               fontFamily: 'Proxima Nova',
                               fontWeight: FontWeight.w400,
                               height: 1,
@@ -390,13 +348,11 @@ class _SavingsPortfolioContent extends StatelessWidget {
                       // Opening Date
                       Positioned(
                         right: horizontalPadding,
-                        top: cardHeight * 0.52,
+                        top: cardHeight * 0.18,
                         child: SizedBox(
                           width: screenWidth * 0.35,
                           child: Text(
-                            transactions.isNotEmpty
-                                ? transactions.first.transactionDate
-                                : 'N/A',
+                            saving.openingDate,
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -413,17 +369,17 @@ class _SavingsPortfolioContent extends StatelessWidget {
                       // Divider
                       Positioned(
                         left: horizontalPadding,
-                        top: cardHeight * 0.68,
+                        top: cardHeight * 0.43,
                         right: horizontalPadding,
                         child: Container(
                           height: 1,
                           color: Colors.black.withOpacity(0.1),
                         ),
                       ),
-                      // Total Savings Label
+                      // Net Balance Label
                       Positioned(
                         left: horizontalPadding,
-                        top: cardHeight * 0.78,
+                        top: cardHeight * 0.51,
                         child: Opacity(
                           opacity: 0.50,
                           child: Text(
@@ -438,16 +394,14 @@ class _SavingsPortfolioContent extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Total Savings Amount
+                      // Net Balance Amount
                       Positioned(
                         left: horizontalPadding,
-                        top: cardHeight * 0.90,
+                        top: cardHeight * 0.60,
                         child: SizedBox(
                           width: screenWidth * 0.5,
                           child: Text(
-                            transactions.isNotEmpty
-                                ? '${transactions.last.outstanding} BDT'
-                                : '0 BDT',
+                            '${saving.netSavingAmount.toStringAsFixed(0)} BDT',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

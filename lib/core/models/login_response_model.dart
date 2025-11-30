@@ -6,6 +6,7 @@ class LoginResponse {
   final String accessToken;
   final UserData userData;
   final List<LoanProduct> loanProducts;
+  final AllSummary allSummary;
   final LoanTransaction loanTransaction;
   final SavingTransaction savingTransaction;
 
@@ -16,13 +17,14 @@ class LoginResponse {
     required this.accessToken,
     required this.userData,
     required this.loanProducts,
+    required this.allSummary,
     required this.loanTransaction,
     required this.savingTransaction,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      status: json['status'] ?? 200,
+      status: json['status'] ?? 0,
       message: json['message'] ?? '',
       appVersion: json['app_version'] ?? '',
       accessToken: json['access_token'] ?? '',
@@ -31,66 +33,143 @@ class LoginResponse {
               ?.map((e) => LoanProduct.fromJson(e))
               .toList() ??
           [],
+      allSummary: AllSummary.fromJson(json['all_summery'] ?? {}),
       loanTransaction: LoanTransaction.fromJson(json['loan_transaction'] ?? {}),
       savingTransaction:
           SavingTransaction.fromJson(json['savingTransaction'] ?? {}),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'message': message,
+      'app_version': appVersion,
+      'access_token': accessToken,
+      'user_data': {
+        'id': userData.id,
+        'name': userData.name,
+        'mobile_no': userData.mobileNo,
+        'branch_name': userData.branchName,
+        'smart_id': userData.smartId,
+        'national_id': userData.nationalId,
+        'samity_id': userData.samityId,
+        'original_member_id': userData.originalMemberId,
+        'branch_id': userData.branchId,
+        'nick_name': userData.nickName,
+      },
+      'loan_product': loanProducts
+          .map((p) => {
+                'id': p.id,
+                'name': p.name,
+                'short_name': p.shortName,
+                'code': p.code,
+                'minimum_loan_amount': p.minimumLoanAmount,
+                'maximum_loan_amount': p.maximumLoanAmount,
+                'default_loan_amount': p.defaultLoanAmount,
+                'grace_period': p.gracePeriod,
+                'number_of_installment': p.numberOfInstallment,
+                'repayment_frequency': p.repaymentFrequency,
+              })
+          .toList(),
+      'all_summery': {
+        'member_id': allSummary.memberId,
+        'loan_count': allSummary.loanCount,
+        'loans': allSummary.loans
+            .map((l) => {
+                  'loan_id': l.loanId,
+                  'customized_loan_no': l.customizedLoanNo,
+                  'loan_product_name': l.loanProductName,
+                  'disburse_date': l.disburseDate,
+                  'last_schedule_date': l.lastScheduleDate,
+                  'loan_amount': l.loanAmount,
+                  'total_payable_amount': l.totalPayableAmount,
+                  'total_recovered_amount': l.totalRecoveredAmount,
+                  'outstanding_amount': l.outstandingAmount,
+                  'is_overdue': l.isOverdue,
+                  'overdue_amount': l.overdueAmount,
+                })
+            .toList(),
+        'saving_count': allSummary.savingCount,
+        'savings': allSummary.savings
+            .map((s) => {
+                  'savings_id': s.savingsId,
+                  'code': s.code,
+                  'product_name': s.productName,
+                  'opening_date': s.openingDate,
+                  'total_deposit': s.totalDeposit,
+                  'total_withdraw': s.totalWithdraw,
+                  'net_saving_amount': s.netSavingAmount,
+                })
+            .toList(),
+      },
+      'loan_transaction': {
+        'total_payable_amount': loanTransaction.totalPayableAmount,
+        'total_transaction_amount': loanTransaction.totalTransactionAmount,
+        'total_outstanding_after_transaction':
+            loanTransaction.totalOutstandingAfterTransaction,
+        'transactions': loanTransaction.transactions
+            .map((t) => {
+                  'transaction_date': t.transactionDate,
+                  'transaction_amount': t.amount,
+                  'outstanding_after_transaction': t.outstanding,
+                })
+            .toList(),
+      },
+      'savingTransaction': {
+        'total_deposit_amount': savingTransaction.totalDepositAmount,
+        'total_withdrawal_amount': savingTransaction.totalWithdrawalAmount,
+        'final_balance': savingTransaction.finalBalance,
+        'transactions': savingTransaction.transactions
+            .map((t) => {
+                  'transaction_date': t.transactionDate,
+                  'deposit_amount': t.amount,
+                  'balance': t.outstanding,
+                })
+            .toList(),
+      },
+    };
+  }
 }
 
 class UserData {
   final String id;
-  final String originalMemberId;
-  final String branchId;
-  final String samityId;
   final String name;
-  final String nickName;
   final String mobileNo;
+  final String branchName;
   final String smartId;
   final String nationalId;
-  final String branchName;
+  final String samityId;
+  final String originalMemberId;
+  final String branchId;
+  final String nickName;
 
   UserData({
     required this.id,
-    required this.originalMemberId,
-    required this.branchId,
-    required this.samityId,
     required this.name,
-    required this.nickName,
     required this.mobileNo,
+    required this.branchName,
     required this.smartId,
     required this.nationalId,
-    required this.branchName,
+    required this.samityId,
+    required this.originalMemberId,
+    required this.branchId,
+    required this.nickName,
   });
 
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
       id: json['id']?.toString() ?? '',
-      originalMemberId: json['original_member_id']?.toString() ?? '',
-      branchId: json['branch_id']?.toString() ?? '',
-      samityId: json['samity_id']?.toString() ?? '',
       name: json['name'] ?? '',
-      nickName: json['nick_name'] ?? '',
       mobileNo: json['mobile_no'] ?? '',
+      branchName: json['branch_name'] ?? '',
       smartId: json['smart_id'] ?? '',
       nationalId: json['national_id'] ?? '',
-      branchName: json['branch_name'] ?? '',
+      samityId: json['samity_id']?.toString() ?? '',
+      originalMemberId: json['original_member_id']?.toString() ?? '',
+      branchId: json['branch_id']?.toString() ?? '',
+      nickName: json['nick_name'] ?? '',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'original_member_id': originalMemberId,
-      'branch_id': branchId,
-      'samity_id': samityId,
-      'name': name,
-      'nick_name': nickName,
-      'mobile_no': mobileNo,
-      'smart_id': smartId,
-      'national_id': nationalId,
-      'branch_name': branchName,
-    };
   }
 }
 
@@ -133,20 +212,120 @@ class LoanProduct {
       repaymentFrequency: json['repayment_frequency'] ?? '',
     );
   }
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'short_name': shortName,
-      'code': code,
-      'minimum_loan_amount': minimumLoanAmount,
-      'maximum_loan_amount': maximumLoanAmount,
-      'default_loan_amount': defaultLoanAmount,
-      'grace_period': gracePeriod,
-      'number_of_installment': numberOfInstallment,
-      'repayment_frequency': repaymentFrequency,
-    };
+class AllSummary {
+  final String memberId;
+  final int loanCount;
+  final List<UserLoan> loans;
+  final int savingCount;
+  final List<UserSaving> savings;
+
+  AllSummary({
+    required this.memberId,
+    required this.loanCount,
+    required this.loans,
+    required this.savingCount,
+    required this.savings,
+  });
+
+  factory AllSummary.fromJson(Map<String, dynamic> json) {
+    return AllSummary(
+      memberId: json['member_id']?.toString() ?? '',
+      loanCount: json['loan_count'] ?? 0,
+      loans:
+          (json['loans'] as List?)?.map((e) => UserLoan.fromJson(e)).toList() ??
+              [],
+      savingCount: json['saving_count'] ?? 0,
+      savings: (json['savings'] as List?)
+              ?.map((e) => UserSaving.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class UserLoan {
+  final String loanId;
+  final String customizedLoanNo;
+  final String loanProductName;
+  final String disburseDate;
+  final String lastScheduleDate;
+  final double loanAmount;
+  final double totalPayableAmount;
+  final double totalRecoveredAmount;
+  final double outstandingAmount;
+  final bool isOverdue;
+  final double overdueAmount;
+
+  UserLoan({
+    required this.loanId,
+    required this.customizedLoanNo,
+    required this.loanProductName,
+    required this.disburseDate,
+    required this.lastScheduleDate,
+    required this.loanAmount,
+    required this.totalPayableAmount,
+    required this.totalRecoveredAmount,
+    required this.outstandingAmount,
+    required this.isOverdue,
+    required this.overdueAmount,
+  });
+
+  factory UserLoan.fromJson(Map<String, dynamic> json) {
+    return UserLoan(
+      loanId: json['loan_id']?.toString() ?? '',
+      customizedLoanNo: json['customized_loan_no'] ?? '',
+      loanProductName: json['loan_product_name'] ?? '',
+      disburseDate: json['disburse_date'] ?? '',
+      lastScheduleDate: json['last_schedule_date'] ?? '',
+      loanAmount: double.tryParse(json['loan_amount']?.toString() ?? '0') ?? 0,
+      totalPayableAmount:
+          double.tryParse(json['total_payable_amount']?.toString() ?? '0') ?? 0,
+      totalRecoveredAmount:
+          double.tryParse(json['total_recovered_amount']?.toString() ?? '0') ??
+              0,
+      outstandingAmount:
+          double.tryParse(json['outstanding_amount']?.toString() ?? '0') ?? 0,
+      isOverdue: json['is_overdue'] ?? false,
+      overdueAmount:
+          double.tryParse(json['overdue_amount']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
+class UserSaving {
+  final String savingsId;
+  final String code;
+  final String? productName;
+  final String openingDate;
+  final double totalDeposit;
+  final double totalWithdraw;
+  final double netSavingAmount;
+
+  UserSaving({
+    required this.savingsId,
+    required this.code,
+    this.productName,
+    required this.openingDate,
+    required this.totalDeposit,
+    required this.totalWithdraw,
+    required this.netSavingAmount,
+  });
+
+  factory UserSaving.fromJson(Map<String, dynamic> json) {
+    return UserSaving(
+      savingsId: json['savings_id']?.toString() ?? '',
+      code: json['code'] ?? '',
+      productName: json['product_name'],
+      openingDate: json['opening_date'] ?? '',
+      totalDeposit:
+          double.tryParse(json['total_deposit']?.toString() ?? '0') ?? 0,
+      totalWithdraw:
+          double.tryParse(json['total_withdraw']?.toString() ?? '0') ?? 0,
+      netSavingAmount:
+          double.tryParse(json['net_saving_amount']?.toString() ?? '0') ?? 0,
+    );
   }
 }
 
@@ -165,13 +344,13 @@ class LoanTransaction {
 
   factory LoanTransaction.fromJson(Map<String, dynamic> json) {
     return LoanTransaction(
-      totalPayableAmount: json['total_payable_amount']?.toString() ?? '',
+      totalPayableAmount: json['total_payable_amount']?.toString() ?? '0',
       totalTransactionAmount:
-          json['total_transaction_amount']?.toString() ?? '',
+          json['total_transaction_amount']?.toString() ?? '0',
       totalOutstandingAfterTransaction:
-          json['total_outstanding_after_transaction']?.toString() ?? '',
+          json['total_outstanding_after_transaction']?.toString() ?? '0',
       transactions: (json['transactions'] as List?)
-              ?.map((e) => Transaction.fromJson(e, 'loan'))
+              ?.map((e) => Transaction.fromJson(e))
               .toList() ??
           [],
     );
@@ -193,11 +372,11 @@ class SavingTransaction {
 
   factory SavingTransaction.fromJson(Map<String, dynamic> json) {
     return SavingTransaction(
-      totalDepositAmount: json['total_deposit_amount']?.toString() ?? '',
-      totalWithdrawalAmount: json['total_withdrawal_amount']?.toString() ?? '',
-      finalBalance: json['final_balance']?.toString() ?? '',
+      totalDepositAmount: json['total_deposit_amount']?.toString() ?? '0',
+      totalWithdrawalAmount: json['total_withdrawal_amount']?.toString() ?? '0',
+      finalBalance: json['final_balance']?.toString() ?? '0',
       transactions: (json['transactions'] as List?)
-              ?.map((e) => Transaction.fromJson(e, 'saving'))
+              ?.map((e) => Transaction.fromJson(e))
               .toList() ??
           [],
     );
@@ -208,39 +387,25 @@ class Transaction {
   final String transactionDate;
   final String amount;
   final String outstanding;
-  final String type; // 'loan' or 'saving'
+  final String type;
 
   Transaction({
     required this.transactionDate,
     required this.amount,
     required this.outstanding,
-    required this.type,
+    this.type = 'loan',
   });
 
-  factory Transaction.fromJson(Map<String, dynamic> json, String type) {
-    if (type == 'loan') {
-      return Transaction(
-        transactionDate: json['transaction_date'] ?? '',
-        amount: json['transaction_amount']?.toString() ?? '',
-        outstanding: json['outstanding_after_transaction']?.toString() ?? '',
-        type: type,
-      );
-    } else {
-      return Transaction(
-        transactionDate: json['transaction_date'] ?? '',
-        amount: json['deposit_amount']?.toString() ?? '',
-        outstanding: json['balance']?.toString() ?? '',
-        type: type,
-      );
-    }
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'transaction_date': transactionDate,
-      'amount': amount,
-      'outstanding': outstanding,
-      'type': type,
-    };
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      transactionDate: json['transaction_date'] ?? '',
+      amount: json['transaction_amount']?.toString() ??
+          json['deposit_amount']?.toString() ??
+          '0',
+      outstanding: json['outstanding_after_transaction']?.toString() ??
+          json['balance']?.toString() ??
+          '0',
+      type: 'loan',
+    );
   }
 }

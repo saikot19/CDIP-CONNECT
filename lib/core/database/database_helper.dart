@@ -1,11 +1,11 @@
-import 'package:sqflite/sqflite.dart' hide Transaction;
+import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
 import '../models/login_response_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
+  static sqflite.Database? _database;
 
   factory DatabaseHelper() {
     return _instance;
@@ -13,286 +13,314 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
-  Future<Database> get database async {
-    _database ??= await _initDatabase();
+  Future<sqflite.Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initializeDatabase();
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      String path = join(dir.path, 'cdip_connect.db');
-      print('📌 Database path: $path');
+  Future<sqflite.Database> _initializeDatabase() async {
+    final dbPath = await sqflite.getDatabasesPath();
+    final path = join(dbPath, 'cdip_connect.db');
 
-      final db = await openDatabase(
-        path,
-        version: 1,
-        onCreate: _createTables,
-      );
-      print('✅ Database initialized successfully');
-      return db;
-    } catch (e) {
-      print('❌ Error initializing database: $e');
-      rethrow;
-    }
+    print('📁 Database path: $path');
+
+    return await sqflite.openDatabase(
+      path,
+      version: 1,
+      onCreate: _createTables,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await _createTables(db, newVersion);
+      },
+    );
   }
 
-  Future<void> _createTables(Database db, int version) async {
+  Future<void> _createTables(sqflite.Database db, int version) async {
+    print('📊 Creating database tables...');
+
     try {
-      print('📌 Creating database tables...');
-
-      // Loan Products Table
+      // Login Response table
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS loan_products(
-          id TEXT PRIMARY KEY,
-          name TEXT,
-          short_name TEXT,
+        CREATE TABLE IF NOT EXISTS login_response (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          response_json TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      // Loans table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS loans (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          loan_id TEXT UNIQUE NOT NULL,
+          member_id TEXT NOT NULL,
+          customized_loan_no TEXT,
+          loan_product_name TEXT,
+          disburse_date TEXT,
+          last_schedule_date TEXT,
+          loan_amount REAL,
+          total_payable_amount REAL,
+          total_recovered_amount REAL,
+          outstanding_amount REAL,
+          is_overdue INTEGER,
+          overdue_amount REAL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      // Savings table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS savings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          savings_id TEXT UNIQUE NOT NULL,
+          member_id TEXT NOT NULL,
           code TEXT,
-          minimum_loan_amount TEXT,
-          maximum_loan_amount TEXT,
-          default_loan_amount TEXT,
-          grace_period TEXT,
-          number_of_installment TEXT,
-          repayment_frequency TEXT,
+          product_name TEXT,
+          opening_date TEXT,
+          total_deposit REAL,
+          total_withdraw REAL,
+          net_saving_amount REAL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       ''');
-      print('✅ loan_products table created');
 
-      // Loan Transactions Table
+      // Loan Transactions table
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS loan_transactions(
+        CREATE TABLE IF NOT EXISTS loan_transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          loan_id TEXT NOT NULL,
           transaction_date TEXT,
-          transaction_amount TEXT,
-          outstanding_after_transaction TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          amount TEXT,
+          outstanding TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
         )
       ''');
-      print('✅ loan_transactions table created');
 
-      // Saving Transactions Table
+      // Savings Transactions table
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS saving_transactions(
+        CREATE TABLE IF NOT EXISTS savings_transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          savings_id TEXT NOT NULL,
           transaction_date TEXT,
-          deposit_amount TEXT,
-          withdrawal_amount TEXT,
-          balance TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          amount TEXT,
+          outstanding TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (savings_id) REFERENCES savings(savings_id)
         )
       ''');
-      print('✅ saving_transactions table created');
 
-      // Login Summary Table
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS login_summary(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          app_version TEXT,
-          access_token TEXT,
-          total_payable_amount TEXT,
-          total_transaction_amount TEXT,
-          total_outstanding_after_transaction TEXT,
-          total_deposit_amount TEXT,
-          total_withdrawal_amount TEXT,
-          final_balance TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      ''');
-      print('✅ login_summary table created');
+      print('✅ Tables created successfully');
     } catch (e) {
       print('❌ Error creating tables: $e');
-      rethrow;
     }
   }
 
-  // Insert Loan Products
-  Future<void> insertLoanProducts(List<LoanProduct> products) async {
-    try {
-      final db = await database;
-      await db.delete('loan_products');
-      print('📌 Cleared loan_products table');
+  // Save complete login response
+  Future<void> saveLoginResponse(Map<String, dynamic> response) async {
+    final db = await database;
+    final jsonString = jsonEncode(response);
 
-      for (var product in products) {
-        await db.insert(
-          'loan_products',
-          {
-            'id': product.id,
-            'name': product.name,
-            'short_name': product.shortName,
-            'code': product.code,
-            'minimum_loan_amount': product.minimumLoanAmount,
-            'maximum_loan_amount': product.maximumLoanAmount,
-            'default_loan_amount': product.defaultLoanAmount,
-            'grace_period': product.gracePeriod,
-            'number_of_installment': product.numberOfInstallment,
-            'repayment_frequency': product.repaymentFrequency,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-      print('✅ Inserted ${products.length} loan products');
-    } catch (e) {
-      print('❌ Error inserting loan products: $e');
-      rethrow;
-    }
-  }
+    print('💾 Saving complete login response...');
 
-  // Get all Loan Products
-  Future<List<LoanProduct>> getLoanProducts() async {
     try {
-      final db = await database;
-      final maps = await db.query('loan_products');
-      print('✅ Retrieved ${maps.length} loan products from DB');
-      return List.generate(maps.length, (i) {
-        return LoanProduct(
-          id: maps[i]['id'].toString(),
-          name: maps[i]['name'].toString(),
-          shortName: maps[i]['short_name'].toString(),
-          code: maps[i]['code'].toString(),
-          minimumLoanAmount: maps[i]['minimum_loan_amount'].toString(),
-          maximumLoanAmount: maps[i]['maximum_loan_amount'].toString(),
-          defaultLoanAmount: maps[i]['default_loan_amount'].toString(),
-          gracePeriod: maps[i]['grace_period'].toString(),
-          numberOfInstallment: maps[i]['number_of_installment'].toString(),
-          repaymentFrequency: maps[i]['repayment_frequency'].toString(),
-        );
+      await db.delete('login_response');
+      await db.insert('login_response', {
+        'response_json': jsonString,
+        'updated_at': DateTime.now().toIso8601String(),
       });
-    } catch (e) {
-      print('❌ Error getting loan products: $e');
-      return [];
-    }
-  }
 
-  // Insert Loan Transactions
-  Future<void> insertLoanTransactions(List<Transaction> transactions) async {
-    try {
-      final db = await database;
-      await db.delete('loan_transactions');
-      print('📌 Cleared loan_transactions table');
-
-      for (var transaction in transactions) {
-        await db.insert(
-          'loan_transactions',
-          {
-            'transaction_date': transaction.transactionDate,
-            'transaction_amount': transaction.amount,
-            'outstanding_after_transaction': transaction.outstanding,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+      // Extract and save structured data
+      if (response['all_summery'] != null) {
+        await _saveAllSummary(
+            response['all_summery'], response['user_data']?['id'] ?? '');
       }
-      print('✅ Inserted ${transactions.length} loan transactions');
-    } catch (e) {
-      print('❌ Error inserting loan transactions: $e');
-      rethrow;
-    }
-  }
 
-  // Get all Loan Transactions
-  Future<List<Transaction>> getLoanTransactions() async {
-    try {
-      final db = await database;
-      final maps = await db.query('loan_transactions');
-      print('✅ Retrieved ${maps.length} loan transactions from DB');
-      return List.generate(maps.length, (i) {
-        return Transaction(
-          transactionDate: maps[i]['transaction_date'].toString(),
-          amount: maps[i]['transaction_amount'].toString(),
-          outstanding: maps[i]['outstanding_after_transaction'].toString(),
-          type: 'loan',
-        );
-      });
-    } catch (e) {
-      print('❌ Error getting loan transactions: $e');
-      return [];
-    }
-  }
-
-  // Insert Saving Transactions
-  Future<void> insertSavingTransactions(List<Transaction> transactions) async {
-    try {
-      final db = await database;
-      await db.delete('saving_transactions');
-      print('📌 Cleared saving_transactions table');
-
-      for (var transaction in transactions) {
-        await db.insert(
-          'saving_transactions',
-          {
-            'transaction_date': transaction.transactionDate,
-            'deposit_amount': transaction.amount,
-            'withdrawal_amount': transaction.amount,
-            'balance': transaction.outstanding,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+      if (response['loan_transaction'] != null) {
+        await _saveLoanTransactionData(response['loan_transaction']);
       }
-      print('✅ Inserted ${transactions.length} saving transactions');
+
+      if (response['savingTransaction'] != null) {
+        await _saveSavingTransactionData(response['savingTransaction']);
+      }
+
+      print('✅ Complete login response saved');
     } catch (e) {
-      print('❌ Error inserting saving transactions: $e');
-      rethrow;
+      print('❌ Error saving login response: $e');
     }
   }
 
-  // Get all Saving Transactions
-  Future<List<Transaction>> getSavingTransactions() async {
+  Future<void> _saveAllSummary(
+      Map<String, dynamic> allSummary, String memberId) async {
+    final db = await database;
+
     try {
-      final db = await database;
-      final maps = await db.query('saving_transactions');
-      print('✅ Retrieved ${maps.length} saving transactions from DB');
-      return List.generate(maps.length, (i) {
-        return Transaction(
-          transactionDate: maps[i]['transaction_date'].toString(),
-          amount: maps[i]['deposit_amount'].toString(),
-          outstanding: maps[i]['balance'].toString(),
-          type: 'saving',
-        );
-      });
+      // Save loans
+      if (allSummary['loans'] is List) {
+        for (var loan in allSummary['loans']) {
+          await db.insert(
+            'loans',
+            {
+              'loan_id': loan['loan_id']?.toString() ?? '',
+              'member_id': memberId,
+              'customized_loan_no': loan['customized_loan_no'] ?? '',
+              'loan_product_name': loan['loan_product_name'] ?? '',
+              'disburse_date': loan['disburse_date'] ?? '',
+              'last_schedule_date': loan['last_schedule_date'] ?? '',
+              'loan_amount':
+                  double.tryParse(loan['loan_amount']?.toString() ?? '0') ?? 0,
+              'total_payable_amount': double.tryParse(
+                      loan['total_payable_amount']?.toString() ?? '0') ??
+                  0,
+              'total_recovered_amount': double.tryParse(
+                      loan['total_recovered_amount']?.toString() ?? '0') ??
+                  0,
+              'outstanding_amount': double.tryParse(
+                      loan['outstanding_amount']?.toString() ?? '0') ??
+                  0,
+              'is_overdue': (loan['is_overdue'] == true) ? 1 : 0,
+              'overdue_amount':
+                  double.tryParse(loan['overdue_amount']?.toString() ?? '0') ??
+                      0,
+            },
+            conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      // Save savings
+      if (allSummary['savings'] is List) {
+        for (var saving in allSummary['savings']) {
+          await db.insert(
+            'savings',
+            {
+              'savings_id': saving['savings_id']?.toString() ?? '',
+              'member_id': memberId,
+              'code': saving['code'] ?? '',
+              'product_name': saving['product_name'] ?? '',
+              'opening_date': saving['opening_date'] ?? '',
+              'total_deposit':
+                  double.tryParse(saving['total_deposit']?.toString() ?? '0') ??
+                      0,
+              'total_withdraw': double.tryParse(
+                      saving['total_withdraw']?.toString() ?? '0') ??
+                  0,
+              'net_saving_amount': double.tryParse(
+                      saving['net_saving_amount']?.toString() ?? '0') ??
+                  0,
+            },
+            conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      print('✅ AllSummary data saved');
     } catch (e) {
-      print('❌ Error getting saving transactions: $e');
-      return [];
+      print('❌ Error saving allSummary: $e');
     }
   }
 
-  // Insert Login Summary
-  Future<void> insertLoginSummary(LoginResponse response) async {
+  Future<void> _saveLoanTransactionData(Map<String, dynamic> loanTxn) async {
+    final db = await database;
+
     try {
-      final db = await database;
-      await db.delete('login_summary');
-      await db.insert(
-        'login_summary',
-        {
-          'app_version': response.appVersion,
-          'access_token': response.accessToken,
-          'total_payable_amount': response.loanTransaction.totalPayableAmount,
-          'total_transaction_amount':
-              response.loanTransaction.totalTransactionAmount,
-          'total_outstanding_after_transaction':
-              response.loanTransaction.totalOutstandingAfterTransaction,
-          'total_deposit_amount': response.savingTransaction.totalDepositAmount,
-          'total_withdrawal_amount':
-              response.savingTransaction.totalWithdrawalAmount,
-          'final_balance': response.savingTransaction.finalBalance,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      print('✅ Login summary inserted');
+      if (loanTxn['transactions'] is List) {
+        final loanId = loanTxn['loan_id']?.toString() ?? 'all_loans';
+
+        // Clear old transactions
+        await db.delete('loan_transactions',
+            where: 'loan_id = ?', whereArgs: [loanId]);
+
+        for (var txn in loanTxn['transactions']) {
+          await db.insert('loan_transactions', {
+            'loan_id': loanId,
+            'transaction_date': txn['transaction_date'] ?? '',
+            'amount': txn['transaction_amount']?.toString() ?? '0',
+            'outstanding':
+                txn['outstanding_after_transaction']?.toString() ?? '0',
+          });
+        }
+      }
+
+      print('✅ Loan transactions saved');
     } catch (e) {
-      print('❌ Error inserting login summary: $e');
-      rethrow;
+      print('❌ Error saving loan transactions: $e');
     }
   }
 
-  // Get Login Summary
+  Future<void> _saveSavingTransactionData(
+      Map<String, dynamic> savingTxn) async {
+    final db = await database;
+
+    try {
+      if (savingTxn['transactions'] is List) {
+        // Clear old transactions
+        await db.delete('savings_transactions',
+            where: 'savings_id = ?', whereArgs: ['all_savings']);
+
+        for (var txn in savingTxn['transactions']) {
+          await db.insert('savings_transactions', {
+            'savings_id': 'all_savings',
+            'transaction_date': txn['transaction_date'] ?? '',
+            'amount': txn['deposit_amount']?.toString() ?? '0',
+            'outstanding': txn['balance']?.toString() ?? '0',
+          });
+        }
+      }
+
+      print('✅ Savings transactions saved');
+    } catch (e) {
+      print('❌ Error saving savings transactions: $e');
+    }
+  }
+
+  // Get login response
+  Future<Map<String, dynamic>?> getLoginResponse() async {
+    final db = await database;
+
+    try {
+      final result = await db.query('login_response', limit: 1);
+
+      if (result.isNotEmpty) {
+        final jsonString = result.first['response_json'] as String;
+        final data = jsonDecode(jsonString);
+        print('✅ Login response retrieved from DB');
+        return data;
+      }
+      print('⚠️ No login response found in DB');
+      return null;
+    } catch (e) {
+      print('❌ Error getting login response: $e');
+      return null;
+    }
+  }
+
+  // Get login summary (for home screen cards)
   Future<Map<String, dynamic>?> getLoginSummary() async {
+    final db = await database;
+
     try {
-      final db = await database;
-      final maps = await db.query('login_summary', limit: 1);
-      if (maps.isNotEmpty) {
-        print('✅ Login summary retrieved');
-        return maps.first;
+      final result = await db.query('login_response', limit: 1);
+
+      if (result.isNotEmpty) {
+        final jsonString = result.first['response_json'] as String;
+        final data = jsonDecode(jsonString);
+
+        // Extract loan and saving transaction summaries
+        final loanTxn = data['loan_transaction'] as Map<String, dynamic>? ?? {};
+        final savingTxn =
+            data['savingTransaction'] as Map<String, dynamic>? ?? {};
+
+        return {
+          'total_outstanding_after_transaction':
+              loanTxn['total_outstanding_after_transaction'] ?? '0',
+          'total_transaction_amount':
+              loanTxn['total_transaction_amount'] ?? '0',
+          'final_balance': savingTxn['final_balance'] ?? '0',
+        };
       }
+
       print('⚠️ No login summary found');
       return null;
     } catch (e) {
@@ -301,18 +329,161 @@ class DatabaseHelper {
     }
   }
 
+  // Get all loans
+  Future<List<UserLoan>> getAllLoans(String memberId) async {
+    final db = await database;
+
+    try {
+      final result = await db.query(
+        'loans',
+        where: 'member_id = ?',
+        whereArgs: [memberId],
+      );
+
+      final loans = result
+          .map((row) => UserLoan(
+                loanId: row['loan_id'] as String? ?? '',
+                customizedLoanNo: row['customized_loan_no'] as String? ?? '',
+                loanProductName: row['loan_product_name'] as String? ?? '',
+                disburseDate: row['disburse_date'] as String? ?? '',
+                lastScheduleDate: row['last_schedule_date'] as String? ?? '',
+                loanAmount: row['loan_amount'] as double? ?? 0,
+                totalPayableAmount: row['total_payable_amount'] as double? ?? 0,
+                totalRecoveredAmount:
+                    row['total_recovered_amount'] as double? ?? 0,
+                outstandingAmount: row['outstanding_amount'] as double? ?? 0,
+                isOverdue: (row['is_overdue'] as int?) == 1,
+                overdueAmount: row['overdue_amount'] as double? ?? 0,
+              ))
+          .toList();
+
+      print('✅ Retrieved ${loans.length} loans from DB');
+      return loans;
+    } catch (e) {
+      print('❌ Error getting loans: $e');
+      return [];
+    }
+  }
+
+  // Get all savings
+  Future<List<UserSaving>> getAllSavings(String memberId) async {
+    final db = await database;
+
+    try {
+      final result = await db.query(
+        'savings',
+        where: 'member_id = ?',
+        whereArgs: [memberId],
+      );
+
+      final savings = result
+          .map((row) => UserSaving(
+                savingsId: row['savings_id'] as String? ?? '',
+                code: row['code'] as String? ?? '',
+                productName: row['product_name'] as String?,
+                openingDate: row['opening_date'] as String? ?? '',
+                totalDeposit: row['total_deposit'] as double? ?? 0,
+                totalWithdraw: row['total_withdraw'] as double? ?? 0,
+                netSavingAmount: row['net_saving_amount'] as double? ?? 0,
+              ))
+          .toList();
+
+      print('✅ Retrieved ${savings.length} savings from DB');
+      return savings;
+    } catch (e) {
+      print('❌ Error getting savings: $e');
+      return [];
+    }
+  }
+
+  // Get loan transactions
+  Future<List<Transaction>> getLoanTransactions({String? loanId}) async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> result;
+
+      if (loanId != null) {
+        result = await db.query(
+          'loan_transactions',
+          where: 'loan_id = ?',
+          whereArgs: [loanId],
+        );
+      } else {
+        result = await db.query('loan_transactions');
+      }
+
+      final transactions = result
+          .map((row) => Transaction(
+                transactionDate: row['transaction_date'] as String? ?? '',
+                amount: row['amount'] as String? ?? '0',
+                outstanding: row['outstanding'] as String? ?? '0',
+              ))
+          .toList();
+
+      print('✅ Retrieved ${transactions.length} loan transactions');
+      return transactions;
+    } catch (e) {
+      print('❌ Error getting loan transactions: $e');
+      return [];
+    }
+  }
+
+  // Get saving transactions
+  Future<List<Transaction>> getSavingTransactions({String? savingsId}) async {
+    final db = await database;
+
+    try {
+      final List<Map<String, dynamic>> result;
+
+      if (savingsId != null) {
+        result = await db.query(
+          'savings_transactions',
+          where: 'savings_id = ?',
+          whereArgs: [savingsId],
+        );
+      } else {
+        result = await db.query('savings_transactions');
+      }
+
+      final transactions = result
+          .map((row) => Transaction(
+                transactionDate: row['transaction_date'] as String? ?? '',
+                amount: row['amount'] as String? ?? '0',
+                outstanding: row['outstanding'] as String? ?? '0',
+              ))
+          .toList();
+
+      print('✅ Retrieved ${transactions.length} saving transactions');
+      return transactions;
+    } catch (e) {
+      print('❌ Error getting saving transactions: $e');
+      return [];
+    }
+  }
+
   // Clear all data
   Future<void> clearAllData() async {
+    final db = await database;
+
     try {
-      final db = await database;
-      await db.delete('loan_products');
+      await db.delete('login_response');
       await db.delete('loan_transactions');
-      await db.delete('saving_transactions');
-      await db.delete('login_summary');
-      print('✅ All database tables cleared');
+      await db.delete('savings_transactions');
+      await db.delete('loans');
+      await db.delete('savings');
+      print('✅ All data cleared from database');
     } catch (e) {
-      print('❌ Error clearing database: $e');
-      rethrow;
+      print('❌ Error clearing data: $e');
+    }
+  }
+
+  // Close database
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+      print('✅ Database closed');
     }
   }
 }
