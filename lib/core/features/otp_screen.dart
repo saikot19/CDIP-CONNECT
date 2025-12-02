@@ -1,11 +1,115 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/auth_service.dart';
 import 'set_password.dart';
 
-class OTPScreen extends StatelessWidget {
-  const OTPScreen({super.key});
+class OTPScreen extends ConsumerStatefulWidget {
+  final String phone;
+  final String testOtp; // Add this
+
+  const OTPScreen({
+    super.key,
+    required this.phone,
+    this.testOtp = '', // Add this
+  });
+
+  @override
+  ConsumerState<OTPScreen> createState() => _OTPScreenState();
+}
+
+class _OTPScreenState extends ConsumerState<OTPScreen> {
+  final TextEditingController _otpController = TextEditingController();
+  final List<TextEditingController> _otpControllers =
+      List.generate(6, (index) => TextEditingController());
+  String? _errorText;
+
+  String get _formattedTime {
+    final timeLeft = ref.watch(otpTimerProvider);
+    final minutes = (timeLeft / 60).floor();
+    final seconds = timeLeft % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _resendOTP() async {
+    if (ref.read(otpTimerProvider) > 0) return;
+
+    try {
+      final response =
+          await ref.read(authProvider.notifier).sendOtp(widget.phone);
+      if (response['status'] == 200) {
+        ref.read(otpTimerProvider.notifier).startTimer();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP resent successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to resend OTP')),
+      );
+    }
+  }
+
+  Future<void> _verifyOTP() async {
+    if (_otpController.text.length != 6) {
+      setState(() => _errorText = 'Please enter 6-digit OTP');
+      return;
+    }
+
+    try {
+      final response = await ref.read(authProvider.notifier).verifyOtp(
+            phone: widget.phone,
+            otp: _otpController.text,
+          );
+
+      if (response['status'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SetPasswordScreen()),
+        );
+      } else {
+        setState(() => _errorText = 'Invalid OTP');
+      }
+    } catch (e) {
+      setState(() => _errorText = e.toString());
+    }
+  }
+
+  void _updateOTP() {
+    String otp = _otpControllers.map((c) => c.text).join();
+    _otpController.text = otp;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Auto-fill OTP for testing
+    if (widget.testOtp.isNotEmpty) {
+      print('Debug - Filling OTP: ${widget.testOtp}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final digits = widget.testOtp.split('');
+        for (var i = 0; i < digits.length && i < _otpControllers.length; i++) {
+          _otpControllers[i].text = digits[i];
+        }
+        _updateOTP();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _otpControllers) {
+      controller.dispose();
+    }
+    _otpController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final timeLeft = ref.watch(otpTimerProvider);
+
     return Scaffold(
       body: Container(
         width: 412,
@@ -51,10 +155,10 @@ class OTPScreen extends StatelessWidget {
               child: Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(
+                    const TextSpan(
                       text: 'Check your phone. We have sent you the \ncode at ',
                       style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
+                        color: Color(0xFF3A3A3A),
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',
                         fontWeight: FontWeight.w400,
@@ -62,9 +166,12 @@ class OTPScreen extends StatelessWidget {
                       ),
                     ),
                     TextSpan(
-                      text: '***451',
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
+                      // Safely handle phone number masking
+                      text: widget.phone.length >= 3
+                          ? '***${widget.phone.substring(widget.phone.length - 3)}'
+                          : widget.phone,
+                      style: const TextStyle(
+                        color: Color(0xFF3A3A3A),
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',
                         fontWeight: FontWeight.w700,
@@ -76,39 +183,62 @@ class OTPScreen extends StatelessWidget {
               ),
             ),
             // OTP Input Boxes
-            ...List.generate(
-                4,
-                (index) => Positioned(
-                      left: 20 + (index * 58),
-                      top: 230,
-                      child: Container(
+            Positioned(
+              left: 20,
+              top: 230,
+              child: Container(
+                width: 372,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ...List.generate(
+                      6,
+                      (index) => Container(
                         width: 50,
                         height: 48,
-                        alignment: Alignment.center,
                         decoration: ShapeDecoration(
                           shape: RoundedRectangleBorder(
                             side: BorderSide(
-                                width: 1, color: const Color(0xFF0080C6)),
+                              width: 1,
+                              color: const Color(0xFF0080C6),
+                            ),
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
-                        child: Text(
-                          '4',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
+                        child: TextField(
+                          controller: _otpControllers[index],
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          maxLength: 1,
+                          onChanged: (value) {
+                            if (value.length == 1 && index < 5) {
+                              FocusScope.of(context).nextFocus();
+                            }
+                            _updateOTP();
+                          },
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            counterText: '',
+                          ),
+                          style: const TextStyle(
+                            color: Color(0xFF3A3A3A),
                             fontSize: 16,
                             fontFamily: 'Proxima Nova',
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                    )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             // Timer
             Positioned(
               left: 20,
               top: 298,
               child: Text(
-                '09 seconds remaining',
+                timeLeft > 0 ? _formattedTime : '00:00',
                 style: TextStyle(
                   color: const Color(0xFF3A3A3A),
                   fontSize: 16,
@@ -124,7 +254,7 @@ class OTPScreen extends StatelessWidget {
               top: 301,
               child: GestureDetector(
                 onTap: () {
-                  // Add resend code functionality
+                  _resendOTP();
                 },
                 child: Text(
                   'Resend Code',
@@ -143,12 +273,7 @@ class OTPScreen extends StatelessWidget {
               top: 365,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SetPasswordScreen(),
-                    ),
-                  );
+                  _verifyOTP();
                 },
                 child: Container(
                   width: 372,
@@ -185,6 +310,21 @@ class OTPScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Error Message
+            if (_errorText != null)
+              Positioned(
+                left: 20,
+                top: 420,
+                child: Text(
+                  _errorText!,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

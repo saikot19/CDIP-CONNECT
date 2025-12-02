@@ -30,15 +30,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: ^3.0.3
   dio: ^5.4.0
-  go_router: ^16.0.0
+  go_router: ^17.0.0
   flutter_secure_storage: ^9.0.0
-
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  http: ^1.5.0
   cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.3
+  sqflite: ^2.3.0
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +79,7 @@ flutter:
     - assets/logo/tdesign_home.png
     - assets/logo/iconoir_profile-circle.png
     - assets/logo/C-5 1@2x.png
+    - assets/icons/bangladesh.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
