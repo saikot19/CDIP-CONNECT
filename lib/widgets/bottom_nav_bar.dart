@@ -19,11 +19,14 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const activeColor = Color(0xFF0880C6);
+    const inactiveColor = Colors.grey;
+
     return Positioned(
-      left: 8,
+      left: 0, // Adjusted to match the background container width usually 412 or screen width
       bottom: 0,
       child: Container(
-        width: 412,
+        width: 412, // Fixed width as per design? Or MediaQuery? keeping 412 for now
         height: 80,
         child: Stack(
           children: [
@@ -33,7 +36,7 @@ class BottomNavBar extends StatelessWidget {
               child: Container(
                 width: 412,
                 height: 80,
-                decoration: ShapeDecoration(
+                decoration: const ShapeDecoration(
                   color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.only(
@@ -55,7 +58,7 @@ class BottomNavBar extends StatelessWidget {
             // Home Icon
             Positioned(
               left: 37,
-              top: 25,
+              top: 20, // Adjusted slightly for Icon alignment
               child: GestureDetector(
                 onTap: () {
                   if (!isHome) {
@@ -74,52 +77,45 @@ class BottomNavBar extends StatelessWidget {
                               ),
                         ),
                       ),
-                      (route) => false,
+                          (route) => false,
                     );
                   }
                 },
                 child: Container(
-                  width: 24,
-                  height: 25,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/tdesign_home.png',
-                    width: 24,
-                    height: 25,
-                    fit: BoxFit.contain,
+                  width: 40, // increased tap area
+                  height: 40,
+                  color: Colors.transparent, // transparent hit box
+                  child: Icon(
+                    Icons.home, // Default home icon
+                    size: 30,
+                    color: isHome ? activeColor : inactiveColor,
                   ),
                 ),
               ),
             ),
             // Profile Icon
             Positioned(
-              left: 361,
-              top: 23,
+              left: 345, // Adjusted position to match right side (~361 in original but 412 width, 361 is far right)
+              top: 20,
               child: GestureDetector(
                 onTap: () {
                   if (!isProfile) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => MyProfileScreen(),
+                        builder: (context) => const MyProfileScreen(),
                       ),
                     );
                   }
                 },
-                child: Opacity(
-                  opacity: isProfile ? 1.0 : 0.60,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(),
-                    child: Image.asset(
-                      'assets/logo/iconoir_profile-circle.png',
-                      width: 24,
-                      height: 24,
-                      fit: BoxFit.contain,
-                    ),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  color: Colors.transparent,
+                  child: Icon(
+                    Icons.person, // Default profile icon
+                    size: 30,
+                    color: isProfile ? activeColor : inactiveColor,
                   ),
                 ),
               ),
