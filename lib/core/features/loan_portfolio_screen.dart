@@ -54,26 +54,6 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
               ),
             ),
           ),
-          // Header Image (Rotated & Positioned as per Figma)
-          Positioned(
-            left: screenWidth * 1.02, // 422 for 412 width
-            top: 138,
-            child: Transform(
-              transform: Matrix4.identity()
-                ..translate(0.0, 0.0)
-                ..rotateZ(-3.14), // ~180 degrees
-              child: Container(
-                width: 432,
-                height: 288,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage("https://placehold.co/432x288"),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-          ),
           // Screen Title
           Positioned(
             left: 73,
@@ -465,19 +445,18 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                 width: 10,
                 height: 10,
                 decoration: const BoxDecoration(
-                  color: Color(
-                      0xFF0080C6), // Dot Color? Figma used specific per row?
+                  color: Color(0xFF0080C6), // Dot Color? Figma used specific per row?
                   shape: BoxShape.circle,
                 ),
               ),
             ),
 
-            // Outstanding Amount (Figma puts it below Date? Or swapped?
+            // Outstanding Amount (Figma puts it below Date? Or swapped? 
             // Figma: Row 1 Date, Row 2 Outstanding, Row 3 Overdue)
-
+            
             // Row 2: Outstanding
             Positioned(
-              left: 200,
+              left: 200, 
               right: 20,
               top: 83,
               child: Text(
@@ -491,7 +470,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                 ),
               ),
             ),
-            Positioned(
+             Positioned(
               left: 106,
               top: 88,
               child: const Text(
@@ -533,7 +512,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen> {
                 ),
               ),
             ),
-            Positioned(
+             Positioned(
               left: 106,
               top: 113,
               child: const Text(

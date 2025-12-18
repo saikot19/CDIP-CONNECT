@@ -19,8 +19,7 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            LoanPortfolioScreen(allSummary: widget.allSummary),
+        builder: (context) => LoanPortfolioScreen(allSummary: widget.allSummary),
       ),
     );
   }

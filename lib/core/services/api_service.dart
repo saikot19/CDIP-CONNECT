@@ -83,9 +83,10 @@ class ApiService {
       return LoginResponse.fromJson(responseData);
     } catch (e) {
       print('Error logging in: $e');
+      // Return a default error response that matches the model structure
       return LoginResponse(
         status: 500,
-        message: 'Network error',
+        message: 'Network error: $e',
         appVersion: '',
         accessToken: '',
         userData: UserData(
@@ -107,6 +108,7 @@ class ApiService {
           loans: [],
           savingCount: 0,
           savings: [],
+          marketingBanners: [],
         ),
         loanTransaction: LoanTransaction(
           totalPayableAmount: '0',
@@ -120,6 +122,7 @@ class ApiService {
           finalBalance: '0',
           transactions: [],
         ),
+        marketingBanners: [], // Added missing field for banners
       );
     }
   }

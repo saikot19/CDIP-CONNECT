@@ -9,6 +9,7 @@ class LoginResponse {
   final AllSummary allSummary;
   final LoanTransaction loanTransaction;
   final SavingTransaction savingTransaction;
+  final List<MarketingBanner> marketingBanners;
 
   LoginResponse({
     required this.status,
@@ -20,6 +21,7 @@ class LoginResponse {
     required this.allSummary,
     required this.loanTransaction,
     required this.savingTransaction,
+    required this.marketingBanners,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,10 @@ class LoginResponse {
       loanTransaction: LoanTransaction.fromJson(json['loan_transaction'] ?? {}),
       savingTransaction:
           SavingTransaction.fromJson(json['savingTransaction'] ?? {}),
+      marketingBanners: (json['marketing_bannar'] as List?)
+              ?.map((e) => MarketingBanner.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
@@ -128,6 +134,31 @@ class LoginResponse {
                 })
             .toList(),
       },
+      'marketing_bannar': marketingBanners.map((b) => b.toJson()).toList(),
+    };
+  }
+}
+
+class MarketingBanner {
+  final String id;
+  final String image;
+  final String title;
+
+  MarketingBanner({required this.id, required this.image, required this.title});
+
+  factory MarketingBanner.fromJson(Map<String, dynamic> json) {
+    return MarketingBanner(
+      id: json['id']?.toString() ?? '',
+      image: json['image'] ?? '',
+      title: json['title'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'image': image,
+      'title': title,
     };
   }
 }
@@ -227,6 +258,7 @@ class AllSummary {
     required this.loans,
     required this.savingCount,
     required this.savings,
+    required List<dynamic> marketingBanners,
   });
 
   factory AllSummary.fromJson(Map<String, dynamic> json) {
@@ -239,6 +271,10 @@ class AllSummary {
       savingCount: json['saving_count'] ?? 0,
       savings: (json['savings'] as List?)
               ?.map((e) => UserSaving.fromJson(e))
+              .toList() ??
+          [],
+      marketingBanners: (json['marketing_banners'] as List?)
+              ?.map((e) => MarketingBanner.fromJson(e))
               .toList() ??
           [],
     );

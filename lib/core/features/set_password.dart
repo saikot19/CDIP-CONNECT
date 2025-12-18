@@ -155,6 +155,7 @@ class SetPasswordScreen extends StatelessWidget {
                           loans: [],
                           savingCount: 0,
                           savings: [],
+                          marketingBanners: [],
                         ),
                       ),
                     ),

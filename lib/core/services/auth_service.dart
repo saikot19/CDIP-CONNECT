@@ -162,6 +162,7 @@ class AuthService {
         loans: loans,
         savingCount: savings.length,
         savings: savings,
+        marketingBanners: [],
       );
     } catch (e) {
       print('❌ Error getting user summary: $e');
@@ -171,6 +172,7 @@ class AuthService {
         loans: [],
         savingCount: 0,
         savings: [],
+        marketingBanners: [],
       );
     }
   }

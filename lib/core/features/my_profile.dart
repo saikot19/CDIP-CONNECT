@@ -518,6 +518,7 @@ class MyProfileScreen extends StatelessWidget {
                 loans: [],
                 savingCount: 0,
                 savings: [],
+                marketingBanners: [],
               ),
             ),
           ],

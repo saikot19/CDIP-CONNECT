@@ -27,11 +27,9 @@ class DatabaseHelper {
 
     return await sqflite.openDatabase(
       path,
-      version: 1,
+      version: 2, // Incremented version for schema change
       onCreate: _createTables,
-      onUpgrade: (db, oldVersion, newVersion) async {
-        await _createTables(db, newVersion);
-      },
+      onUpgrade: _upgradeTables,
     );
   }
 
@@ -110,10 +108,31 @@ class DatabaseHelper {
           FOREIGN KEY (savings_id) REFERENCES savings(savings_id)
         )
       ''');
+      
+      // Banners table (New)
+      await db.execute('''
+          CREATE TABLE IF NOT EXISTS marketing_banners (
+            id TEXT PRIMARY KEY,
+            image_url TEXT NOT NULL,
+            title TEXT
+          )
+          ''');
 
       print('✅ Tables created successfully');
     } catch (e) {
       print('❌ Error creating tables: $e');
+    }
+  }
+  
+  Future<void> _upgradeTables(sqflite.Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+          CREATE TABLE IF NOT EXISTS marketing_banners (
+            id TEXT PRIMARY KEY,
+            image_url TEXT NOT NULL,
+            title TEXT
+          )
+          ''');
     }
   }
 
@@ -143,6 +162,10 @@ class DatabaseHelper {
 
       if (response['savingTransaction'] != null) {
         await _saveSavingTransactionData(response['savingTransaction']);
+      }
+      
+      if (response['marketing_bannar'] != null) {
+        await _saveMarketingBanners(response['marketing_bannar']);
       }
 
       print('✅ Complete login response saved');
@@ -275,6 +298,28 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> _saveMarketingBanners(List<dynamic> banners) async {
+    final db = await database;
+    try {
+      await db.delete('marketing_banners'); // Clear old banners
+      for (var bannerData in banners) {
+        final banner = MarketingBanner.fromJson(bannerData);
+        await db.insert(
+          'marketing_banners',
+          {
+            'id': banner.id,
+            'image_url': banner.image,
+            'title': banner.title,
+          },
+          conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+        );
+      }
+      print('✅ Marketing banners saved');
+    } catch (e) {
+      print('❌ Error saving marketing banners: $e');
+    }
+  }
+
   // Get login response
   Future<Map<String, dynamic>?> getLoginResponse() async {
     final db = await database;
@@ -328,6 +373,26 @@ class DatabaseHelper {
       return null;
     }
   }
+
+  Future<List<MarketingBanner>> getMarketingBanners() async {
+    final db = await database;
+    try {
+      final result = await db.query('marketing_banners');
+      final banners = result.map((row) {
+        return MarketingBanner(
+          id: row['id'] as String,
+          image: row['image_url'] as String,
+          title: row['title'] as String,
+        );
+      }).toList();
+      print('✅ Retrieved ${banners.length} banners from DB');
+      return banners;
+    } catch (e) {
+      print('❌ Error getting marketing banners: $e');
+      return [];
+    }
+  }
+
 
   // Get all loans
   Future<List<UserLoan>> getAllLoans(String memberId) async {
@@ -472,6 +537,7 @@ class DatabaseHelper {
       await db.delete('savings_transactions');
       await db.delete('loans');
       await db.delete('savings');
+      await db.delete('marketing_banners'); // Clear banners too
       print('✅ All data cleared from database');
     } catch (e) {
       print('❌ Error clearing data: $e');
