@@ -82,12 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeaderAndSummary(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
       children: [
         // Header
         Container(
-          height: 292,
+          padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -103,79 +102,69 @@ class _HomeScreenState extends State<HomeScreen> {
               bottomRight: Radius.circular(10),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Fixes greeting position
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.grey[300],
-                      radius: 29,
-                      child: const Icon(Icons.person, size: 32, color: Colors.grey),
-                    ),
-                    Stack(
-                      children: [
-                        const Icon(Icons.notifications_outlined, size: 28, color: Colors.white),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const ShapeDecoration(
-                              color: Color(0xFFFF0000),
-                              shape: OvalBorder(),
-                            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.grey[300],
+                    radius: 29,
+                    child:
+                        const Icon(Icons.person, size: 32, color: Colors.grey),
+                  ),
+                  Stack(
+                    children: [
+                      const Icon(Icons.notifications_outlined,
+                          size: 28, color: Colors.white),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const ShapeDecoration(
+                            color: Color(0xFFFF0000),
+                            shape: OvalBorder(),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_getGreeting()},',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    FutureBuilder<String>(
-                      future: AuthService.getMemberName(),
-                      builder: (context, snapshot) {
-                        return Text(
-                          snapshot.data ?? widget.memberName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '${_getGreeting()},',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 5),
+              FutureBuilder<String>(
+                future: AuthService.getMemberName(),
+                builder: (context, snapshot) {
+                  return Text(
+                    snapshot.data ?? widget.memberName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontFamily: 'Proxima Nova',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-        // Summary Box - Positioned to overlap
-        Positioned(
-          top: 292 - 140, // Header height - overlap amount
-          left: 0,
-          right: 0,
-          child: _buildPortfolioSummary(context),
-        ),
+        const SizedBox(height: 20),
+        // Summary Box - Now naturally positioned
+        _buildPortfolioSummary(context),
       ],
     );
   }
@@ -213,9 +202,20 @@ class _HomeScreenState extends State<HomeScreen> {
           FutureBuilder<Map<String, dynamic>?>(
             future: _loginSummaryFuture,
             builder: (context, snapshot) {
-              String outstanding = snapshot.data?['total_outstanding_after_transaction']?.toString() ?? '0';
-              String overdue = snapshot.data?['total_transaction_amount']?.toString() ?? '0';
-              String savings = snapshot.data?['final_balance']?.toString() ?? '0';
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError || !snapshot.hasData) {
+                return const Text('Unable to load portfolio data');
+              }
+
+              final data = snapshot.data!;
+              String outstanding = _formatCurrency(
+                  data['total_outstanding_after_transaction'] ?? 0);
+              String overdue =
+                  _formatCurrency(data['total_transaction_amount'] ?? 0);
+              String savings = _formatCurrency(data['final_balance'] ?? 0);
 
               return Column(
                 children: [
@@ -237,14 +237,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     count: widget.allSummary.savingCount.toString(),
                   ),
                   const SizedBox(height: 7),
-                  // Restored Total Due Amount Card
                   _buildSummaryCard(
                     color: const Color(0xFFFF5959),
                     iconAsset: 'assets/logo/zondicons_minus-outline.png',
                     title: 'Total Due Amount',
                     amount: overdue,
                     countLabel: 'Number of Due Loans',
-                    count: '0', // Assuming a static count for now
+                    count: '0',
                   ),
                 ],
               );
@@ -253,6 +252,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return '0';
+    try {
+      final numValue = double.parse(value.toString());
+      return numValue.toStringAsFixed(2);
+    } catch (e) {
+      return value.toString();
+    }
   }
 
   Widget _buildSummaryCard({
@@ -313,53 +322,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildManagePortfolio(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 170), // Pushes this section below the summary
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.0),
-            child: Text(
-              'Manage Portfolio',
-              style: TextStyle(
-                color: Color(0xFF1E1E1E),
-                fontSize: 16,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Text(
+            'Manage Portfolio',
+            style: TextStyle(
+              color: Color(0xFF1E1E1E),
+              fontSize: 16,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildManageButton(
-                  context, 'assets/logo/Cash in Hand.png', 'Loan', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        loan.LoanPortfolioScreen(allSummary: widget.allSummary),
-                  ),
-                );
-              }),
-              _buildManageButton(
-                  context, 'assets/logo/Request Money.png', 'Savings', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        SavingsPortfolioScreen(allSummary: widget.allSummary),
-                  ),
-                );
-              }),
-              _buildManageButton(
-                  context, 'assets/logo/Pocket Money.png', 'Referral', () {}),
-            ],
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildManageButton(context, 'assets/logo/Cash in Hand.png', 'Loan',
+                () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      loan.LoanPortfolioScreen(allSummary: widget.allSummary),
+                ),
+              );
+            }),
+            _buildManageButton(
+                context, 'assets/logo/Request Money.png', 'Savings', () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SavingsPortfolioScreen(allSummary: widget.allSummary),
+                ),
+              );
+            }),
+            _buildManageButton(
+                context, 'assets/logo/Pocket Money.png', 'Referral', () {}),
+          ],
+        ),
+      ],
     );
   }
 
@@ -426,7 +432,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             itemBuilder: (context, index) {
               final banner = banners[index];
-              final imageUrl = 'https://connect.cdipits.site/public/${banner.image}';
+              final imageUrl =
+                  'https://connect.cdipits.site/public/${banner.image}';
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
