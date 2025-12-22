@@ -65,7 +65,7 @@ class BottomNavBar extends StatelessWidget {
                               loans: [],
                               savingCount: 0,
                               savings: [],
-                              marketingBanners: [], // Added this line
+                              marketingBanners: [],
                             ),
                       ),
                     ),

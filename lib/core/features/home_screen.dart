@@ -9,11 +9,13 @@ import 'savings_portfolio_screen.dart';
 class HomeScreen extends StatefulWidget {
   final String memberName;
   final AllSummary allSummary;
+  final DashboardSummary? dashboardSummary;
 
   const HomeScreen({
     super.key,
     required this.memberName,
     required this.allSummary,
+    this.dashboardSummary,
   });
 
   @override
@@ -21,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<Map<String, dynamic>?> _loginSummaryFuture;
+  late Future<Map<String, dynamic>?> _dashboardSummaryFuture;
   late Future<List<MarketingBanner>> _bannersFuture;
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
@@ -29,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loginSummaryFuture = DatabaseHelper().getLoginSummary();
+    _dashboardSummaryFuture = DatabaseHelper().getDashboardSummary();
     _bannersFuture = DatabaseHelper().getMarketingBanners();
   }
 
@@ -57,16 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildHeaderAndSummary(context),
               Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildManagePortfolio(context),
-                    const SizedBox(height: 20),
-                    _buildBottomBanner(context),
-                    const SizedBox(height: 15),
-                    _buildDotIndicators(),
-                    const SizedBox(height: 120), // Padding for BottomNavBar
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildManagePortfolio(context),
+                      const SizedBox(height: 20),
+                      _buildBottomBanner(context),
+                      const SizedBox(height: 15),
+                      _buildDotIndicators(),
+                      const SizedBox(height: 120), // Padding for BottomNavBar
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -199,54 +202,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 15),
+
           FutureBuilder<Map<String, dynamic>?>(
-            future: _loginSummaryFuture,
+            future: _dashboardSummaryFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (snapshot.hasError || !snapshot.hasData) {
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                 return const Text('Unable to load portfolio data');
               }
 
-              final data = snapshot.data!;
-              String outstanding = _formatCurrency(
-                  data['total_outstanding_after_transaction'] ?? 0);
-              String overdue =
-                  _formatCurrency(data['total_transaction_amount'] ?? 0);
-              String savings = _formatCurrency(data['final_balance'] ?? 0);
+              final summary = DashboardSummary.fromJson(snapshot.data!);
 
-              return Column(
-                children: [
-                  _buildSummaryCard(
-                    color: const Color(0xFF2370A1),
-                    iconAsset: 'assets/logo/flowbite_chart-pie-outline.png',
-                    title: 'Total Outstanding',
-                    amount: outstanding,
-                    countLabel: 'Number of Loans',
-                    count: widget.allSummary.loanCount.toString(),
-                  ),
-                  const SizedBox(height: 7),
-                  _buildSummaryCard(
-                    color: const Color(0xFF075F63),
-                    iconAsset: 'assets/logo/Group.png',
-                    title: 'Total Savings',
-                    amount: savings,
-                    countLabel: 'Number of Savings',
-                    count: widget.allSummary.savingCount.toString(),
-                  ),
-                  const SizedBox(height: 7),
-                  _buildSummaryCard(
-                    color: const Color(0xFFFF5959),
-                    iconAsset: 'assets/logo/zondicons_minus-outline.png',
-                    title: 'Total Due Amount',
-                    amount: overdue,
-                    countLabel: 'Number of Due Loans',
-                    count: '0',
-                  ),
-                ],
-              );
+              return _buildDashboardSummaryCards(summary);
             },
           ),
         ],
@@ -254,8 +224,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildDashboardSummaryCards(DashboardSummary summary) {
+    String loanOutstanding = _formatCurrency(summary.loanOutstanding);
+    String savingsOutstanding = _formatCurrency(summary.savingsOutstanding);
+    String dueAmount = _formatCurrency(summary.dueLoanAmount);
+
+    return Column(
+      children: [
+        _buildSummaryCard(
+          color: const Color(0xFF2370A1),
+          iconAsset: 'assets/logo/flowbite_chart-pie-outline.png',
+          title: 'Total Outstanding',
+          amount: loanOutstanding,
+          countLabel: 'Number of Loans',
+          count: summary.loanCount.toString(),
+        ),
+        const SizedBox(height: 7),
+        _buildSummaryCard(
+          color: const Color(0xFF075F63),
+          iconAsset: 'assets/logo/Group.png',
+          title: 'Total Savings',
+          amount: savingsOutstanding,
+          countLabel: 'Number of Savings',
+          count: summary.savingsCount.toString(),
+        ),
+        const SizedBox(height: 7),
+        _buildSummaryCard(
+          color: const Color(0xFFFF5959),
+          iconAsset: 'assets/logo/zondicons_minus-outline.png',
+          title: 'Total Due Amount',
+          amount: dueAmount,
+          countLabel: 'Number of Due Loans',
+          count: summary.dueLoanCount.toString(),
+        ),
+      ],
+    );
+  }
+
   String _formatCurrency(dynamic value) {
-    if (value == null) return '0';
+    if (value == null) return '0.00';
     try {
       final numValue = double.parse(value.toString());
       return numValue.toStringAsFixed(2);

@@ -1,3 +1,4 @@
+import 'package:cdip_connect/core/services/shared_preference_service.dart';
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,32 @@ class SavingsPortfolioScreen extends StatefulWidget {
 }
 
 class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
+  String _lastUpdated = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastUpdated();
+  }
+
+  Future<void> _loadLastUpdated() async {
+    final prefsService = SharedPreferenceService();
+    final lastUpdated = await prefsService.getLastUpdated();
+    if (lastUpdated != null && lastUpdated.isNotEmpty) {
+      try {
+        final dateTime = DateTime.parse(lastUpdated);
+        final formattedDate = DateFormat('d MMM y').format(dateTime);
+        setState(() {
+          _lastUpdated = formattedDate;
+        });
+      } catch (e) {
+        setState(() {
+          _lastUpdated = lastUpdated; // fallback to raw string if parsing fails
+        });
+      }
+    }
+  }
+
   void switchToLoan() {
     Navigator.pushReplacement(
       context,
@@ -100,7 +127,7 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
             left: 76,
             top: 121,
             child: Text(
-              'Transactions Last Updated on ${DateFormat('d MMM y').format(DateTime.now())}',
+              'Transactions Last Updated on $_lastUpdated',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,

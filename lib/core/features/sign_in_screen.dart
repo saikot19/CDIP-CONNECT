@@ -54,22 +54,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         password: password,
       );
 
-      print('Login Response Status: ${response.status}');
-
       if (response.status == 200) {
-        print('📌 Login successful, saving session...');
-
-        // Save session to SharedPreferences and SQLite
-        try {
-          await AuthService.saveUserSession(response);
-          print('✅ Session saved successfully');
-        } catch (e) {
-          print('❌ Error saving session: $e');
-          setState(() {
-            _errorText = 'Error saving session: $e';
-          });
-          return;
-        }
+        await AuthService.saveUserSession(response);
 
         if (!mounted) return;
 
@@ -79,18 +65,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             builder: (context) => HomeScreen(
               memberName: response.userData.name,
               allSummary: response.allSummary,
+              dashboardSummary: response.dashboardSummary,
             ),
           ),
         );
       } else {
         setState(() {
-          _errorText = response.message ?? 'Invalid credentials';
+          _errorText = response.message;
         });
       }
     } catch (e) {
-      print('❌ Error in sign in: $e');
       setState(() {
-        _errorText = 'Network error occurred: $e';
+        _errorText = 'A network error occurred.';
       });
     } finally {
       if (mounted) {
@@ -100,6 +86,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +132,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(left: 12),
-                        child:
+                        child: 
                             Icon(Icons.phone_android, color: Color(0xFF0880C6)),
                       ),
                       Expanded(

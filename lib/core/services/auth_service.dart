@@ -177,6 +177,29 @@ class AuthService {
     }
   }
 
+  // Get dashboard summary
+  static Future<DashboardSummary?> getDashboardSummary() async {
+    try {
+      final db = DatabaseHelper();
+      final allSummaryData = await db.getLoginResponse();
+
+      if (allSummaryData != null) {
+        try {
+          final loginResponse = LoginResponse.fromJson(allSummaryData);
+          print('✅ Dashboard Summary loaded from DB');
+          return loginResponse.dashboardSummary;
+        } catch (e) {
+          print('❌ Error parsing login response: $e');
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Error getting dashboard summary: $e');
+      return null;
+    }
+  }
+
   // Logout (alias for backwards compatibility)
   static Future<void> clear() async {
     await logout();
