@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
-import '../models/login_response_model.dart';
 
 class SavingsDetailsScreen extends StatefulWidget {
   final String savingsId;
@@ -17,7 +16,7 @@ class SavingsDetailsScreen extends StatefulWidget {
 }
 
 class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
-  late Future<List<Transaction>> _transactionsFuture;
+  late Future<List<Map<String, dynamic>>> _transactionsFuture;
 
   @override
   void initState() {
@@ -25,9 +24,9 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
     _transactionsFuture = _getSavingsTransactions();
   }
 
-  Future<List<Transaction>> _getSavingsTransactions() async {
+  Future<List<Map<String, dynamic>>> _getSavingsTransactions() async {
     final db = DatabaseHelper();
-    return await db.getSavingTransactions();
+    return await db.getSavingTransactions(savingsId: widget.savingsId);
   }
 
   @override
@@ -132,7 +131,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                   ),
                 ),
                 const Divider(height: 1, thickness: 0.5, color: Colors.black26),
-                FutureBuilder<List<Transaction>>(
+                FutureBuilder<List<Map<String, dynamic>>>(
                   future: _transactionsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -162,7 +161,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        row.transactionDate,
+                                        row['transaction_date'],
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF21409A),
@@ -175,7 +174,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        '0 BDT',
+                                        '${row['deposit_amount']} BDT',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF21409A),
@@ -188,7 +187,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        '${row.amount} BDT',
+                                        '${row['withdrawal_amount']} BDT',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF21409A),
@@ -201,7 +200,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        '${row.outstanding} BDT',
+                                        '${row['balance']} BDT',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF0880C6),
@@ -236,10 +235,10 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                                 ),
                               ),
                             ),
-                            const Expanded(
+                            Expanded(
                               flex: 3,
                               child: Text(
-                                '0 BDT',
+                                '${txns.fold(0.0, (sum, t) => sum + (t['deposit_amount'] ?? 0)).toStringAsFixed(0)} BDT',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black,
@@ -252,7 +251,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                             Expanded(
                               flex: 3,
                               child: Text(
-                                '${txns.fold(0.0, (sum, t) => sum + (double.tryParse(t.amount) ?? 0)).toStringAsFixed(0)} BDT',
+                                '${txns.fold(0.0, (sum, t) => sum + (t['withdrawal_amount'] ?? 0)).toStringAsFixed(0)} BDT',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black,
@@ -265,7 +264,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                             Expanded(
                               flex: 3,
                               child: Text(
-                                '${txns.last.outstanding} BDT',
+                                '${txns.last['balance']} BDT',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black,

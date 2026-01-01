@@ -39,6 +39,9 @@ dependencies:
   shared_preferences: ^2.5.3
   sqflite: ^2.3.0
   path: ^1.8.3
+  intl: ^0.20.2
+  fluttertoast: ^8.2.6
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:
@@ -73,13 +76,21 @@ flutter:
     - assets/logo/Group.png
     - assets/logo/zondicons_minus-outline.png
     - assets/logo/flowbite_chart-pie-outline.png
-    - assets/logo/fluent_money-hand-24-regular.png
-    - assets/logo/fluent-mdl2_bank.png
-    - assets/logo/fluent_people-community-add-24-regular.png
     - assets/logo/tdesign_home.png
     - assets/logo/iconoir_profile-circle.png
-    - assets/logo/C-5 1@2x.png
     - assets/icons/bangladesh.png
+    - assets/logo/lets-icons_order-light.png
+    - assets/logo/mdi_language.png
+    - assets/logo/carbon_location.png
+    - assets/logo/material-symbols-light_star-outline.png
+    - assets/logo/mdi_about-circle-outline.png
+    - assets/logo/material-symbols-light_privacy-tip-outline.png
+    - assets/logo/fluent_re-order-dots-horizontal-24-regular.png
+    - assets/logo/uil_sign-out-alt.png
+    - assets/logo/Shadhin Add for  CDIP Connect@4x-100 1.png
+    - assets\logo\Request Money.png
+    - assets\logo\Cash in Hand.png
+    - assets\logo\Pocket Money.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

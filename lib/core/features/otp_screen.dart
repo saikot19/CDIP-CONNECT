@@ -107,7 +107,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    // ref.watch(authProvider); // Uncomment if needed for auth state monitoring
     final timeLeft = ref.watch(otpTimerProvider);
 
     return Scaffold(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
-import '../models/login_response_model.dart';
 
 class LoanDetailsScreen extends StatefulWidget {
   final String loanId;
@@ -17,7 +16,7 @@ class LoanDetailsScreen extends StatefulWidget {
 }
 
 class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
-  late Future<List<Transaction>> _transactionsFuture;
+  late Future<List<Map<String, dynamic>>> _transactionsFuture;
 
   @override
   void initState() {
@@ -25,10 +24,9 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
     _transactionsFuture = _getLoanTransactions();
   }
 
-  Future<List<Transaction>> _getLoanTransactions() async {
+  Future<List<Map<String, dynamic>>> _getLoanTransactions() async {
     final db = DatabaseHelper();
-    final result = await db.getLoanTransactions();
-    return (result as List).map((item) => item as Transaction).toList();
+    return await db.getLoanTransactions(loanId: widget.loanId);
   }
 
   @override
@@ -120,7 +118,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                   ),
                 ),
                 const Divider(height: 1, thickness: 0.5, color: Colors.black26),
-                FutureBuilder<List<Transaction>>(
+                FutureBuilder<List<Map<String, dynamic>>>(
                   future: _transactionsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -150,7 +148,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        row.transactionDate,
+                                        row['transaction_date'],
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF21409A),
@@ -163,7 +161,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        '${row.amount} BDT',
+                                        '${row['transaction_amount']} BDT',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF21409A),
@@ -176,7 +174,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                                     Expanded(
                                       flex: 4,
                                       child: Text(
-                                        '${row.outstanding} BDT',
+                                        '${row['transaction_principal_amount']} BDT',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           color: Color(0xFF0880C6),
@@ -215,7 +213,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                             Expanded(
                               flex: 3,
                               child: Text(
-                                '${txns.fold(0.0, (sum, t) => sum + (double.tryParse(t.amount) ?? 0)).toStringAsFixed(0)} BDT',
+                                '${txns.fold(0.0, (sum, t) => sum + (t['transaction_amount'] ?? 0)).toStringAsFixed(0)} BDT',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black,
@@ -228,7 +226,7 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                             Expanded(
                               flex: 4,
                               child: Text(
-                                '${txns.last.outstanding} BDT',
+                                '${txns.last['transaction_principal_amount']} BDT',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black,

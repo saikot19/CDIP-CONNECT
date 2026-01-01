@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../database/database_helper.dart';
-import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
@@ -26,33 +24,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     try {
-      print('🔄 Checking login status...');
-
       final isLoggedIn = await AuthService.isLoggedIn();
 
       if (isLoggedIn) {
-        print('✅ User is logged in');
-
-        final memberName = await AuthService.getMemberName();
         final allSummary = await AuthService.getUserAllSummary();
 
-        print(
-            '📊 Loaded: ${allSummary.loans.length} loans, ${allSummary.savings.length} savings');
+        if (allSummary != null) {
+          if (!mounted) return;
 
-        if (!mounted) return;
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(
-              memberName: memberName,
-              allSummary: allSummary,
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const HomeScreen(),
             ),
-          ),
-        );
+          );
+        } else {
+          // If summary is null, logout and go to sign up
+          await AuthService.logout();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const SignUpScreen()),
+          );
+        }
       } else {
-        print('⚠️ User not logged in');
-
         if (!mounted) return;
 
         Navigator.pushReplacement(

@@ -19,108 +19,78 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    const activeColor = Color(0xFF0880C6);
+    const inactiveColor = Colors.grey;
+
     return Positioned(
-      left: 8,
+      left: 0,
       bottom: 0,
       child: Container(
-        width: 412,
+        width: screenWidth,
         height: 80,
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Container(
-                width: 412,
-                height: 80,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 15,
-                      offset: Offset(0, 4),
-                      spreadRadius: 0,
-                    )
-                  ],
-                ),
-              ),
+        decoration: const ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
             ),
+          ),
+          shadows: [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 15,
+              offset: Offset(0, 4),
+              spreadRadius: 0,
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
             // Home Icon
-            Positioned(
-              left: 37,
-              top: 25,
-              child: GestureDetector(
-                onTap: () {
-                  if (!isHome) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomeScreen(
-                          memberName: memberName,
-                          allSummary: allSummary ??
-                              AllSummary(
-                                memberId: '',
-                                loanCount: 0,
-                                loans: [],
-                                savingCount: 0,
-                                savings: [],
-                              ),
-                        ),
-                      ),
-                      (route) => false,
-                    );
-                  }
-                },
-                child: Container(
-                  width: 24,
-                  height: 25,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/tdesign_home.png',
-                    width: 24,
-                    height: 25,
-                    fit: BoxFit.contain,
-                  ),
+            GestureDetector(
+              onTap: () {
+                if (!isHome) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                    (route) => false,
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.transparent, // For larger tap area
+                child: Icon(
+                  Icons.home,
+                  size: 30,
+                  color: isHome ? activeColor : inactiveColor,
                 ),
               ),
             ),
             // Profile Icon
-            Positioned(
-              left: 361,
-              top: 23,
-              child: GestureDetector(
-                onTap: () {
-                  if (!isProfile) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MyProfileScreen(),
-                      ),
-                    );
-                  }
-                },
-                child: Opacity(
-                  opacity: isProfile ? 1.0 : 0.60,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(),
-                    child: Image.asset(
-                      'assets/logo/iconoir_profile-circle.png',
-                      width: 24,
-                      height: 24,
-                      fit: BoxFit.contain,
+            GestureDetector(
+              onTap: () {
+                if (!isProfile) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MyProfileScreen(),
                     ),
-                  ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.transparent,
+                child: Icon(
+                  Icons.person,
+                  size: 30,
+                  color: isProfile ? activeColor : inactiveColor,
                 ),
               ),
             ),
