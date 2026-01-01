@@ -83,7 +83,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 width: 210,
                 height: 173.94,
                 child: Image.asset(
-                  'assets/logo/Logo.png',
+                  'assets/logo/App Splash Screen-8.png',
                   fit: BoxFit.contain,
                 ),
               ),

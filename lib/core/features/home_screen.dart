@@ -46,6 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return await AuthService.getUserAllSummary();
   }
 
+  Future<bool> _checkForUpdate() async {
+    // TODO: Implement your update check logic here
+    // This is a placeholder implementation
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,23 +138,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     child:
                         const Icon(Icons.person, size: 32, color: Colors.grey),
                   ),
-                  Stack(
-                    children: [
-                      const Icon(Icons.notifications_outlined,
-                          size: 28, color: Colors.white),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const ShapeDecoration(
-                            color: Color(0xFFFF0000),
-                            shape: OvalBorder(),
+                  GestureDetector(
+                    onTap: () async {
+                      final isUpdateAvailable = await _checkForUpdate();
+                      if (mounted) {
+                        // ignore: use_build_context_synchronously
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isUpdateAvailable
+                                  ? 'New version available. Please update!'
+                                  : 'App is up to date',
+                            ),
+                            duration: const Duration(seconds: 2),
                           ),
+                        );
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        const Icon(Icons.notifications_outlined,
+                            size: 28, color: Colors.white),
+                        FutureBuilder<bool>(
+                          future: _checkForUpdate(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data == true) {
+                              return Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const ShapeDecoration(
+                                    color: Color(0xFFFF0000),
+                                    shape: OvalBorder(),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

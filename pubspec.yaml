@@ -67,7 +67,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/logo/Logo.png
+    - assets\logo\App Splash Screen-8.png
     - assets\logo\International and safe money transfers.png
     - assets\logo\money and pie chart.png
     - assets\logo\wallet with money.png
@@ -76,17 +76,7 @@ flutter:
     - assets/logo/Group.png
     - assets/logo/zondicons_minus-outline.png
     - assets/logo/flowbite_chart-pie-outline.png
-    - assets/logo/tdesign_home.png
-    - assets/logo/iconoir_profile-circle.png
-    - assets/icons/bangladesh.png
-    - assets/logo/lets-icons_order-light.png
-    - assets/logo/mdi_language.png
-    - assets/logo/carbon_location.png
-    - assets/logo/material-symbols-light_star-outline.png
-    - assets/logo/mdi_about-circle-outline.png
-    - assets/logo/material-symbols-light_privacy-tip-outline.png
-    - assets/logo/fluent_re-order-dots-horizontal-24-regular.png
-    - assets/logo/uil_sign-out-alt.png
+
     - assets/logo/Shadhin Add for  CDIP Connect@4x-100 1.png
     - assets\logo\Request Money.png
     - assets\logo\Cash in Hand.png

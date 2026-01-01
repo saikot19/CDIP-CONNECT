@@ -2,6 +2,7 @@ import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
+import 'loan_portfolio_screen.dart';
 import 'sign_up.dart';
 
 class MyProfileScreen extends StatefulWidget {
@@ -102,15 +103,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             Positioned(
               left: 37,
               top: 116,
-              child: Container(
-                width: 76,
-                height: 76,
-                decoration: ShapeDecoration(
-                  image: const DecorationImage(
-                    image: AssetImage('assets/logo/profile.png'),
-                    fit: BoxFit.cover,
-                  ),
-                  shape: const OvalBorder(),
+              child: CircleAvatar(
+                radius: 38,
+                backgroundColor: Colors.grey[300],
+                child: Icon(
+                  Icons.person,
+                  size: 40,
+                  color: Colors.grey[800],
                 ),
               ),
             ),
@@ -218,289 +217,74 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 ),
               ),
             ),
-            // My Portfolio
+            // Menu Items
             Positioned(
-              left: 76,
-              top: 244,
-              child: Text(
-                'My Portfolio',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 32,
-              top: 238,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 25,
-                  height: 25,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/lets-icons_order-light.png',
-                    width: 25,
-                    height: 25,
+              top: 230,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  _buildProfileMenuRow(
+                    icon: Icons.article_outlined,
+                    text: 'My Portfolio',
+                    onTap: () {
+                      if (_allSummary != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                LoanPortfolioScreen(allSummary: _allSummary!),
+                          ),
+                        );
+                      }
+                    },
                   ),
-                ),
-              ),
-            ),
-            // Change Language
-            Positioned(
-              left: 75,
-              top: 296.78,
-              child: Text(
-                'Change Language',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 36,
-              top: 294,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/mdi_language.png',
-                    width: 16,
-                    height: 16,
+                  _buildProfileMenuRow(
+                    icon: Icons.language,
+                    text: 'Change Language',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-            // Manage Address
-            Positioned(
-              left: 76,
-              top: 345.78,
-              child: Text(
-                'Manage Address',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 32,
-              top: 342,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/carbon_location.png',
-                    width: 20,
-                    height: 20,
+                  _buildProfileMenuRow(
+                    icon: Icons.location_on_outlined,
+                    text: 'Manage Address',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-            // Rate Us
-            Positioned(
-              left: 76,
-              top: 396,
-              child: Text(
-                'Rate Us',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 32,
-              top: 389,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 24.44,
-                  height: 24.44,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/material-symbols-light_star-outline.png',
-                    width: 24.44,
-                    height: 24.44,
+                  _buildProfileMenuRow(
+                    icon: Icons.star_outline,
+                    text: 'Rate Us',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-
-            // About Us
-            Positioned(
-              left: 76,
-              top: 446,
-              child: Text(
-                'About Us',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 32,
-              top: 442,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/mdi_about-circle-outline.png',
-                    width: 20,
-                    height: 20,
+                  _buildProfileMenuRow(
+                    icon: Icons.info_outline,
+                    text: 'About Us',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-            // Privacy Policy
-            Positioned(
-              left: 76,
-              top: 500,
-              child: Text(
-                'Privacy Policy',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 32,
-              top: 496,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 22.22,
-                  height: 22.22,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/material-symbols-light_privacy-tip-outline.png',
-                    width: 22.22,
-                    height: 22.22,
+                  _buildProfileMenuRow(
+                    icon: Icons.privacy_tip_outlined,
+                    text: 'Privacy Policy',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-            // Terms & Condition
-            Positioned(
-              left: 79,
-              top: 550,
-              child: Text(
-                'Terms & Condition',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 13,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 35,
-              top: 546,
-              child: Opacity(
-                opacity: 0.70,
-                child: Container(
-                  width: 22.22,
-                  height: 22.22,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: Image.asset(
-                    'assets/logo/fluent_re-order-dots-horizontal-24-regular.png',
-                    width: 22.22,
-                    height: 22.22,
+                  _buildProfileMenuRow(
+                    icon: Icons.description_outlined,
+                    text: 'Terms & Condition',
+                    onTap: () {},
                   ),
-                ),
-              ),
-            ),
-            // Logout
-            Positioned(
-              left: 79,
-              top: 600,
-              child: GestureDetector(
-                onTap: () async {
-                  // Clear session and database
-                  await AuthService.logout();
-
-                  if (!context.mounted) return;
-
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const SignUpScreen()),
-                    (route) => false,
-                  );
-                },
-                child: const Text(
-                  'Logout',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFFF737B),
-                    fontSize: 13,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w500,
-                    height: 1,
+                  _buildProfileMenuRow(
+                    icon: Icons.logout,
+                    text: 'Logout',
+                    textColor: const Color(0xFFFF737B),
+                    onTap: () async {
+                      await AuthService.logout();
+                      if (!context.mounted) return;
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SignUpScreen()),
+                        (route) => false,
+                      );
+                    },
                   ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 35,
-              top: 596,
-              child: Container(
-                width: 22.22,
-                height: 22.22,
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(),
-                child: Image.asset(
-                  'assets/logo/uil_sign-out-alt.png',
-                  width: 22.22,
-                  height: 22.22,
-                ),
+                ],
               ),
             ),
             // Bottom Navigation Bar
@@ -510,6 +294,35 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 memberName: _memberName,
                 allSummary: _allSummary,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileMenuRow({
+    required IconData icon,
+    required String text,
+    VoidCallback? onTap,
+    Color textColor = const Color(0xFF3A3A3A),
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 32.0),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF3A3A3A).withOpacity(0.7)),
+            const SizedBox(width: 24),
+            Text(
+              text,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
       ),
