@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     return await sqflite.openDatabase(
       path,
-      version: 3, // Incremented version for new schema
+      version: 8, // Incremented version for schema change
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
     );
@@ -61,6 +61,7 @@ class DatabaseHelper {
           outstanding_amount REAL,
           is_overdue INTEGER,
           overdue_amount REAL,
+          is_open INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       ''');
@@ -73,9 +74,11 @@ class DatabaseHelper {
           code TEXT,
           product_name TEXT,
           opening_date TEXT,
+          closing_date TEXT,
           total_deposit REAL,
           total_withdraw REAL,
           net_saving_amount REAL,
+          is_open INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       ''');
@@ -100,6 +103,7 @@ class DatabaseHelper {
           deposit_amount REAL,
           withdrawal_amount REAL,
           balance REAL,
+          flag TEXT,
           FOREIGN KEY (savings_id) REFERENCES savings(savings_id)
         )
       ''');
@@ -107,7 +111,7 @@ class DatabaseHelper {
       await db.execute('''
           CREATE TABLE IF NOT EXISTS marketing_banners (
             id TEXT PRIMARY KEY,
-            image_url TEXT NOT NULL,
+            image TEXT NOT NULL,
             title TEXT
           )
           ''');
@@ -130,26 +134,53 @@ class DatabaseHelper {
     }
   }
   
-  Future<void> _upgradeTables(sqflite.Database db, int oldVersion, int newVersion) async {
+  Future<void> _upgradeTables(
+      sqflite.Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('''
           CREATE TABLE IF NOT EXISTS marketing_banners (
             id TEXT PRIMARY KEY,
-            image_url TEXT NOT NULL,
+            image TEXT NOT NULL,
             title TEXT
           )
           ''');
     }
     if (oldVersion < 3) {
-       await db.execute('DROP TABLE IF EXISTS loan_transactions');
-       await db.execute('DROP TABLE IF EXISTS savings_transactions');
-       await _createTables(db, newVersion);
+      await db.execute('DROP TABLE IF EXISTS loan_transactions');
+      await db.execute('DROP TABLE IF EXISTS savings_transactions');
+      await _createTables(db, newVersion);
+    }
+    if (oldVersion < 4) {
+      await db
+          .execute('ALTER TABLE loans ADD COLUMN is_open INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 5) {
+      // This was a duplicate, do nothing.
+    }
+    if (oldVersion < 6) {
+      await db
+          .execute('ALTER TABLE savings ADD COLUMN is_open INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE savings ADD COLUMN closing_date TEXT');
+      await db.execute('ALTER TABLE savings_transactions ADD COLUMN flag TEXT');
+    }
+    if (oldVersion < 7) {
+       // This was a duplicate, do nothing.
+    }
+     if (oldVersion < 8) {
+      await db.execute('DROP TABLE IF EXISTS marketing_banners');
+      await db.execute('''
+          CREATE TABLE IF NOT EXISTS marketing_banners (
+            id TEXT PRIMARY KEY,
+            image TEXT NOT NULL,
+            title TEXT
+          )
+          ''');
     }
   }
 
-  Future<void> saveLoginResponse(Map<String, dynamic> response) async {
+  Future<void> saveLoginResponse(LoginResponse response) async {
     final db = await database;
-    final jsonString = jsonEncode(response);
+    final jsonString = jsonEncode(response.toJson());
 
     print('💾 Saving complete login response...');
 
@@ -160,21 +191,12 @@ class DatabaseHelper {
         'updated_at': DateTime.now().toIso8601String(),
       });
 
-      if (response['dashboard_summery'] != null) {
-        await _saveDashboardSummary(response['dashboard_summery']);
-      }
-
-      if (response['loan_transaction'] != null) {
-        await _saveLoanTransactions(response['loan_transaction']);
-      }
-
-      if (response['savingTransaction'] != null) {
-        await _saveSavingTransactions(response['savingTransaction']);
-      }
-      
-      if (response['marketing_bannar'] != null) {
-        await _saveMarketingBanners(response['marketing_bannar']);
-      }
+      await _saveDashboardSummary(response.dashboardSummary);
+      await _saveLoansAndTransactions(
+          response.loanTransactions, response.userData.id);
+      await _saveSavingsAndTransactions(
+          response.savingAccounts, response.userData.id);
+      await _saveMarketingBanners(response.marketingBanners);
 
       print('✅ Complete login response saved');
     } catch (e) {
@@ -182,80 +204,135 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> _saveDashboardSummary(Map<String, dynamic> summary) async {
+  Future<void> _saveDashboardSummary(DashboardSummary summary) async {
     final db = await database;
     try {
       await db.delete('dashboard_summary');
-      await db.insert('dashboard_summary', summary);
+      await db.insert('dashboard_summary', summary.toJson());
       print('✅ Dashboard summary saved');
     } catch (e) {
       print('❌ Error saving dashboard summary: $e');
     }
   }
 
-  Future<void> _saveLoanTransactions(List<dynamic> transactions) async {
+  Future<void> _saveLoansAndTransactions(
+      List<LoanTransaction> loanTransactions, String memberId) async {
     final db = await database;
     try {
+      await db.delete('loans', where: 'member_id = ?', whereArgs: [memberId]);
       await db.delete('loan_transactions');
-      for (var loan in transactions) {
-         if(loan['transactions'] is List) {
-            for(var txn in loan['transactions']) {
-                 await db.insert('loan_transactions', {
-                    'loan_id': loan['loan_id'],
-                    'transaction_date': txn['transaction_date'],
-                    'transaction_amount': txn['transaction_amount'],
-                    'transaction_principal_amount': txn['transaction_principal_amount'],
-                    'transaction_interest_amount': txn['transaction_interest_amount'],
-                });
-            }
-         }
-      }
-      print('✅ Loan transactions saved');
-    } catch (e) {
-      print('❌ Error saving loan transactions: $e');
-    }
-  }
 
-  Future<void> _saveSavingTransactions(Map<String, dynamic> savingTxn) async {
-    final db = await database;
-    try {
-      await db.delete('savings_transactions');
-      if(savingTxn['transactions'] is List) {
-        for (var txn in savingTxn['transactions']) {
-          await db.insert('savings_transactions', {
-             'savings_id': 'all_savings', // Since there is no savings_id in the response
-             'transaction_date': txn['transaction_date'],
-             'deposit_amount': txn['deposit_amount'],
-             'withdrawal_amount': txn['withdrawal_amount'],
-             'balance': txn['balance'],
+      for (var loan in loanTransactions) {
+        await db.insert(
+          'loans',
+          {
+            'loan_id': loan.loanId,
+            'member_id': memberId,
+            'customized_loan_no': loan.customizedLoanNo,
+            'loan_product_name': loan.productName,
+            'disburse_date': loan.disburseDate,
+            'last_schedule_date': loan.loanFullyPaidDate,
+            'loan_amount': loan.totalPayableAmount,
+            'total_payable_amount': loan.totalPayableAmount,
+            'total_recovered_amount': loan.totalTransactionAmount,
+            'outstanding_amount': loan.totalOutstandingAfterTransaction,
+            'is_overdue': (loan.totalOverdueTransactionAmount) > 0 ? 1 : 0,
+            'overdue_amount': loan.totalOverdueTransactionAmount,
+            'is_open': loan.isOpen == '1' ? 1 : 0,
+          },
+          conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+        );
+
+        for (var txn in loan.transactions) {
+          await db.insert('loan_transactions', {
+            'loan_id': loan.loanId,
+            'transaction_date': txn.transactionDate,
+            'transaction_amount': txn.transactionAmount,
+            'transaction_principal_amount': txn.transactionPrincipalAmount,
+            'transaction_interest_amount': txn.transactionInterestAmount,
           });
         }
       }
-      print('✅ Savings transactions saved');
+      print('✅ Loans and transactions saved');
     } catch (e) {
-      print('❌ Error saving savings transactions: $e');
+      print('❌ Error saving loans and transactions: $e');
     }
   }
 
-  Future<void> _saveMarketingBanners(List<dynamic> banners) async {
+  Future<void> _saveSavingsAndTransactions(
+      List<SavingAccount> savingAccounts, String memberId) async {
+    final db = await database;
+    try {
+      await db.delete('savings', where: 'member_id = ?', whereArgs: [memberId]);
+      await db.delete('savings_transactions');
+
+      for (var account in savingAccounts) {
+        await db.insert(
+          'savings',
+          {
+            'savings_id': account.savingId,
+            'member_id': memberId,
+            'code': account.customizedSavingNo,
+            'product_name': account.productName,
+            'opening_date': account.openingDate,
+            'closing_date': account.closingDate,
+            'total_deposit': account.totalDeposit,
+            'total_withdraw': account.totalWithdraw,
+            'net_saving_amount': account.currentBalance,
+            'is_open': account.isOpen,
+          },
+          conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+        );
+
+        for (var txn in account.transactions) {
+          await db.insert('savings_transactions', {
+            'savings_id': account.savingId,
+            'transaction_date': txn.transactionDate,
+            'deposit_amount': txn.depositAmount,
+            'withdrawal_amount': txn.withdrawAmount,
+            'balance': txn.balanceAfterTx,
+            'flag': txn.flag,
+          });
+        }
+      }
+      print('✅ Savings and transactions saved');
+    } catch (e) {
+      print('❌ Error saving savings and transactions: $e');
+    }
+  }
+
+  Future<void> _saveMarketingBanners(List<MarketingBanner> banners) async {
     final db = await database;
     try {
       await db.delete('marketing_banners'); // Clear old banners
-      for (var bannerData in banners) {
-        final banner = MarketingBanner.fromJson(bannerData);
+      for (var banner in banners) {
         await db.insert(
           'marketing_banners',
-          {
-            'id': banner.id,
-            'image_url': banner.image,
-            'title': banner.title,
-          },
+          banner.toJson(),
           conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
         );
       }
       print('✅ Marketing banners saved');
     } catch (e) {
       print('❌ Error saving marketing banners: $e');
+    }
+  }
+
+  Future<List<MarketingBanner>> getMarketingBanners() async {
+    final db = await database;
+    try {
+      final result = await db.query('marketing_banners');
+      if (result.isNotEmpty) {
+        print('✅ Retrieved ${result.length} marketing banners');
+        return result
+            .map((row) => MarketingBanner.fromJson(row))
+            .toList();
+      }
+      print('⚠️ No marketing banners found in DB');
+      return [];
+    } catch (e) {
+      print('❌ Error getting marketing banners: $e');
+      return [];
     }
   }
 
@@ -275,17 +352,15 @@ class DatabaseHelper {
     }
   }
 
-  Future<Map<String, dynamic>?> getLoginResponse() async {
+  Future<LoginResponse?> getLoginResponse() async {
     final db = await database;
-
     try {
       final result = await db.query('login_response', limit: 1);
-
       if (result.isNotEmpty) {
         final jsonString = result.first['response_json'] as String;
         final data = jsonDecode(jsonString);
         print('✅ Login response retrieved from DB');
-        return data;
+        return LoginResponse.fromJson(data);
       }
       print('⚠️ No login response found in DB');
       return null;
@@ -295,59 +370,8 @@ class DatabaseHelper {
     }
   }
 
-  Future<Map<String, dynamic>?> getLoginSummary() async {
-    final db = await database;
-
-    try {
-      final result = await db.query('login_response', limit: 1);
-
-      if (result.isNotEmpty) {
-        final jsonString = result.first['response_json'] as String;
-        final data = jsonDecode(jsonString);
-
-        final loanTxn = data['loan_transaction'] as Map<String, dynamic>? ?? {};
-        final savingTxn =
-            data['savingTransaction'] as Map<String, dynamic>? ?? {};
-
-        return {
-          'total_outstanding_after_transaction':
-              loanTxn['total_outstanding_after_transaction'] ?? '0',
-          'total_transaction_amount':
-              loanTxn['total_transaction_amount'] ?? '0',
-          'final_balance': savingTxn['final_balance'] ?? '0',
-        };
-      }
-
-      print('⚠️ No login summary found');
-      return null;
-    } catch (e) {
-      print('❌ Error getting login summary: $e');
-      return null;
-    }
-  }
-
-  Future<List<MarketingBanner>> getMarketingBanners() async {
-    final db = await database;
-    try {
-      final result = await db.query('marketing_banners');
-      final banners = result.map((row) {
-        return MarketingBanner(
-          id: row['id'] as String,
-          image: row['image_url'] as String,
-          title: row['title'] as String,
-        );
-      }).toList();
-      print('✅ Retrieved ${banners.length} banners from DB');
-      return banners;
-    } catch (e) {
-      print('❌ Error getting marketing banners: $e');
-      return [];
-    }
-  }
-
   Future<List<UserLoan>> getAllLoans(String memberId) async {
     final db = await database;
-
     try {
       final result = await db.query(
         'loans',
@@ -355,34 +379,33 @@ class DatabaseHelper {
         whereArgs: [memberId],
       );
 
-      final loans = result
+      return result
           .map((row) => UserLoan(
-                loanId: row['loan_id'] as String? ?? '',
-                customizedLoanNo: row['customized_loan_no'] as String? ?? '',
-                loanProductName: row['loan_product_name'] as String? ?? '',
-                disburseDate: row['disburse_date'] as String? ?? '',
-                lastScheduleDate: row['last_schedule_date'] as String? ?? '',
-                loanAmount: row['loan_amount'] as double? ?? 0,
-                totalPayableAmount: row['total_payable_amount'] as double? ?? 0,
+                loanId: row['loan_id'] as String,
+                customizedLoanNo: row['customized_loan_no'] as String,
+                loanProductName: row['loan_product_name'] as String,
+                disburseDate: row['disburse_date'] as String,
+                lastScheduleDate: row['last_schedule_date'] as String,
+                loanAmount: (row['loan_amount'] as num).toDouble(),
+                totalPayableAmount:
+                    (row['total_payable_amount'] as num).toDouble(),
                 totalRecoveredAmount:
-                    row['total_recovered_amount'] as double? ?? 0,
-                outstandingAmount: row['outstanding_amount'] as double? ?? 0,
-                isOverdue: (row['is_overdue'] as int?) == 1,
-                overdueAmount: row['overdue_amount'] as double? ?? 0,
+                    (row['total_recovered_amount'] as num).toDouble(),
+                outstandingAmount:
+                    (row['outstanding_amount'] as num).toDouble(),
+                isOverdue: (row['is_overdue'] as int) == 1,
+                overdueAmount: (row['overdue_amount'] as num).toDouble(),
+                isOpen: (row['is_open'] as int) == 1,
               ))
           .toList();
-
-      print('✅ Retrieved ${loans.length} loans from DB');
-      return loans;
     } catch (e) {
-      print('❌ Error getting loans: $e');
+      print('❌ Error getting loans from DB: $e');
       return [];
     }
   }
 
   Future<List<UserSaving>> getAllSavings(String memberId) async {
     final db = await database;
-
     try {
       final result = await db.query(
         'savings',
@@ -390,27 +413,27 @@ class DatabaseHelper {
         whereArgs: [memberId],
       );
 
-      final savings = result
+      return result
           .map((row) => UserSaving(
-                savingsId: row['savings_id'] as String? ?? '',
-                code: row['code'] as String? ?? '',
+                savingsId: row['savings_id'] as String,
+                code: row['code'] as String,
                 productName: row['product_name'] as String?,
-                openingDate: row['opening_date'] as String? ?? '',
-                totalDeposit: row['total_deposit'] as double? ?? 0,
-                totalWithdraw: row['total_withdraw'] as double? ?? 0,
-                netSavingAmount: row['net_saving_amount'] as double? ?? 0,
+                openingDate: row['opening_date'] as String,
+                closingDate: row['closing_date'] as String?,
+                totalDeposit: (row['total_deposit'] as num).toDouble(),
+                totalWithdraw: (row['total_withdraw'] as num).toDouble(),
+                netSavingAmount: (row['net_saving_amount'] as num).toDouble(),
+                isOpen: (row['is_open'] as int) == 1,
               ))
           .toList();
-
-      print('✅ Retrieved ${savings.length} savings from DB');
-      return savings;
     } catch (e) {
-      print('❌ Error getting savings: $e');
+      print('❌ Error getting savings from DB: $e');
       return [];
     }
   }
 
-  Future<List<Map<String,dynamic>>> getLoanTransactions({String? loanId}) async {
+  Future<List<Map<String, dynamic>>> getLoanTransactions(
+      {String? loanId}) async {
     final db = await database;
 
     try {
@@ -433,7 +456,8 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Map<String,dynamic>>> getSavingTransactions({String? savingsId}) async {
+  Future<List<Map<String, dynamic>>> getSavingTransactions(
+      {String? savingsId}) async {
     final db = await database;
 
     try {

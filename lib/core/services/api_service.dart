@@ -94,7 +94,8 @@ class ApiService {
           'user_data': responseData['user_data'],
         });
 
-        _checkAppVersion(responseData['app_version']);
+        // Check version in background without blocking UI
+        Future.microtask(() => _checkAppVersion(responseData['app_version']));
 
         return LoginResponse.fromJson(responseData);
       } else {
@@ -134,13 +135,7 @@ class ApiService {
       ),
       marketingBanners: [],
       loanTransactions: [],
-      savingTransaction: SavingTransaction(
-        totalTransactions: 0,
-        totalDepositAmount: 0,
-        totalWithdrawalAmount: 0,
-        finalBalance: 0,
-        transactions: [],
-      ),
+      savingAccounts: [],
       loanProducts: [],
       allSummary: AllSummary(
         memberId: '',
@@ -154,18 +149,22 @@ class ApiService {
   }
 
   static void _checkAppVersion(String latestVersion) async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    String currentVersion = packageInfo.version;
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String currentVersion = packageInfo.version;
 
-    if (currentVersion.compareTo(latestVersion) < 0) {
-      Fluttertoast.showToast(
-        msg: "A new version of the app is available. Please update.",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      if (currentVersion.compareTo(latestVersion) < 0) {
+        Fluttertoast.showToast(
+          msg: "A new version of the app is available. Please update.",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+    } catch (e) {
+      print('Error checking app version: $e');
     }
   }
 }

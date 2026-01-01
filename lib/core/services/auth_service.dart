@@ -101,7 +101,7 @@ class AuthService {
       await prefs.setString(_keyAccessToken, response.accessToken);
 
       // Save complete response to SQLite
-      await db.saveLoginResponse(response.toJson());
+      await db.saveLoginResponse(response);
 
       print('✅ User session saved successfully');
     } catch (e) {
@@ -135,45 +135,25 @@ class AuthService {
   }
 
   // Get user all summary
-  static Future<AllSummary> getUserAllSummary() async {
+  static Future<AllSummary?> getUserAllSummary() async {
     try {
-      final memberId = await getMemberId();
       final db = DatabaseHelper();
-
-      final allSummaryData = await db.getLoginResponse();
-
-      if (allSummaryData != null) {
-        try {
-          final loginResponse = LoginResponse.fromJson(allSummaryData);
-          print('✅ AllSummary loaded from DB');
-          return loginResponse.allSummary;
-        } catch (e) {
-          print('❌ Error parsing login response: $e');
-        }
-      }
-
-      // Fallback: construct from individual tables
-      final loans = await db.getAllLoans(memberId);
-      final savings = await db.getAllSavings(memberId);
-
-      return AllSummary(
-        memberId: memberId,
-        loanCount: loans.length,
-        loans: loans,
-        savingCount: savings.length,
-        savings: savings,
-        marketingBanners: [],
-      );
+      final loginResponse = await db.getLoginResponse();
+      return loginResponse?.allSummary;
     } catch (e) {
       print('❌ Error getting user summary: $e');
-      return AllSummary(
-        memberId: '',
-        loanCount: 0,
-        loans: [],
-        savingCount: 0,
-        savings: [],
-        marketingBanners: [],
-      );
+      return null;
+    }
+  }
+  
+    static Future<LoginResponse?> getLoginResponse() async {
+    try {
+      final db = DatabaseHelper();
+      final loginResponse = await db.getLoginResponse();
+      return loginResponse;
+    } catch (e) {
+      print('❌ Error getting login response: $e');
+      return null;
     }
   }
 
@@ -181,19 +161,8 @@ class AuthService {
   static Future<DashboardSummary?> getDashboardSummary() async {
     try {
       final db = DatabaseHelper();
-      final allSummaryData = await db.getLoginResponse();
-
-      if (allSummaryData != null) {
-        try {
-          final loginResponse = LoginResponse.fromJson(allSummaryData);
-          print('✅ Dashboard Summary loaded from DB');
-          return loginResponse.dashboardSummary;
-        } catch (e) {
-          print('❌ Error parsing login response: $e');
-        }
-      }
-
-      return null;
+      final loginResponse = await db.getLoginResponse();
+      return loginResponse?.dashboardSummary;
     } catch (e) {
       print('❌ Error getting dashboard summary: $e');
       return null;

@@ -56,18 +56,7 @@ class BottomNavBar extends StatelessWidget {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => HomeScreen(
-                        memberName: memberName,
-                        allSummary: allSummary ??
-                            AllSummary(
-                              memberId: '',
-                              loanCount: 0,
-                              loans: [],
-                              savingCount: 0,
-                              savings: [],
-                              marketingBanners: [],
-                            ),
-                      ),
+                      builder: (context) => const HomeScreen(),
                     ),
                     (route) => false,
                   );

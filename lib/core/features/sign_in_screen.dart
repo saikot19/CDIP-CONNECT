@@ -59,14 +59,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
         if (!mounted) return;
 
+        // Navigate without passing large objects - fetch from cache on HomeScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              memberName: response.userData.name,
-              allSummary: response.allSummary,
-              dashboardSummary: response.dashboardSummary,
-            ),
+            builder: (context) => const HomeScreen(),
           ),
         );
       } else {
@@ -86,7 +83,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +128,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(left: 12),
-                        child: 
+                        child:
                             Icon(Icons.phone_android, color: Color(0xFF0880C6)),
                       ),
                       Expanded(

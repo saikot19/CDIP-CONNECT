@@ -7,22 +7,14 @@ import 'loan_portfolio_screen.dart' as loan;
 import 'savings_portfolio_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String memberName;
-  final AllSummary allSummary;
-  final DashboardSummary? dashboardSummary;
-
-  const HomeScreen({
-    super.key,
-    required this.memberName,
-    required this.allSummary,
-    this.dashboardSummary,
-  });
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<String> _memberNameFuture;
   late Future<Map<String, dynamic>?> _dashboardSummaryFuture;
   late Future<List<MarketingBanner>> _bannersFuture;
   final PageController _bannerController = PageController();
@@ -31,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _memberNameFuture = AuthService.getMemberName();
     _dashboardSummaryFuture = DatabaseHelper().getDashboardSummary();
     _bannersFuture = DatabaseHelper().getMarketingBanners();
   }
@@ -47,6 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (hour < 17) return 'Good Afternoon';
     if (hour < 21) return 'Good Evening';
     return 'Good Night';
+  }
+
+  Future<AllSummary?> _getallSummary() async {
+    return await AuthService.getUserAllSummary();
   }
 
   @override
@@ -74,10 +71,28 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          BottomNavBar(
-            isHome: true,
-            memberName: widget.memberName,
-            allSummary: widget.allSummary,
+          FutureBuilder<String>(
+            future: _memberNameFuture,
+            builder: (context, memberSnapshot) {
+              return FutureBuilder<AllSummary?>(
+                future: _getallSummary(),
+                builder: (context, summarySnapshot) {
+                  return BottomNavBar(
+                    isHome: true,
+                    memberName: memberSnapshot.data ?? '',
+                    allSummary: summarySnapshot.data ??
+                        AllSummary(
+                          memberId: '',
+                          loanCount: 0,
+                          loans: [],
+                          savingCount: 0,
+                          savings: [],
+                          marketingBanners: [],
+                        ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
@@ -149,10 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 5),
               FutureBuilder<String>(
-                future: AuthService.getMemberName(),
+                future: _memberNameFuture,
                 builder: (context, snapshot) {
                   return Text(
-                    snapshot.data ?? widget.memberName,
+                    snapshot.data ?? 'Member',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -202,7 +217,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 15),
-
           FutureBuilder<Map<String, dynamic>?>(
             future: _dashboardSummaryFuture,
             builder: (context, snapshot) {
@@ -210,7 +224,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+              if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data == null) {
                 return const Text('Unable to load portfolio data');
               }
 
@@ -231,22 +247,72 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        _buildSummaryCard(
-          color: const Color(0xFF2370A1),
-          iconAsset: 'assets/logo/flowbite_chart-pie-outline.png',
-          title: 'Total Outstanding',
-          amount: loanOutstanding,
-          countLabel: 'Number of Loans',
-          count: summary.loanCount.toString(),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FutureBuilder<AllSummary?>(
+                  future: _getallSummary(),
+                  builder: (context, snapshot) {
+                    return loan.LoanPortfolioScreen(
+                      allSummary: snapshot.data ??
+                          AllSummary(
+                            memberId: '',
+                            loanCount: 0,
+                            loans: [],
+                            savingCount: 0,
+                            savings: [],
+                            marketingBanners: [],
+                          ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+          child: _buildSummaryCard(
+            color: const Color(0xFF2370A1),
+            iconAsset: 'assets/logo/flowbite_chart-pie-outline.png',
+            title: 'Total Outstanding',
+            amount: loanOutstanding,
+            countLabel: 'Number of Loans',
+            count: summary.loanCount.toString(),
+          ),
         ),
         const SizedBox(height: 7),
-        _buildSummaryCard(
-          color: const Color(0xFF075F63),
-          iconAsset: 'assets/logo/Group.png',
-          title: 'Total Savings',
-          amount: savingsOutstanding,
-          countLabel: 'Number of Savings',
-          count: summary.savingsCount.toString(),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FutureBuilder<AllSummary?>(
+                  future: _getallSummary(),
+                  builder: (context, snapshot) {
+                    return SavingsPortfolioScreen(
+                      allSummary: snapshot.data ??
+                          AllSummary(
+                            memberId: '',
+                            loanCount: 0,
+                            loans: [],
+                            savingCount: 0,
+                            savings: [],
+                            marketingBanners: [],
+                          ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+          child: _buildSummaryCard(
+            color: const Color(0xFF075F63),
+            iconAsset: 'assets/logo/Group.png',
+            title: 'Total Savings',
+            amount: savingsOutstanding,
+            countLabel: 'Number of Savings',
+            count: summary.savingsCount.toString(),
+          ),
         ),
         const SizedBox(height: 7),
         _buildSummaryCard(
@@ -353,8 +419,22 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      loan.LoanPortfolioScreen(allSummary: widget.allSummary),
+                  builder: (context) => FutureBuilder<AllSummary?>(
+                    future: _getallSummary(),
+                    builder: (context, snapshot) {
+                      return loan.LoanPortfolioScreen(
+                        allSummary: snapshot.data ??
+                            AllSummary(
+                              memberId: '',
+                              loanCount: 0,
+                              loans: [],
+                              savingCount: 0,
+                              savings: [],
+                              marketingBanners: [],
+                            ),
+                      );
+                    },
+                  ),
                 ),
               );
             }),
@@ -363,8 +443,22 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      SavingsPortfolioScreen(allSummary: widget.allSummary),
+                  builder: (context) => FutureBuilder<AllSummary?>(
+                    future: _getallSummary(),
+                    builder: (context, snapshot) {
+                      return SavingsPortfolioScreen(
+                        allSummary: snapshot.data ??
+                            AllSummary(
+                              memberId: '',
+                              loanCount: 0,
+                              loans: [],
+                              savingCount: 0,
+                              savings: [],
+                              marketingBanners: [],
+                            ),
+                      );
+                    },
+                  ),
                 ),
               );
             }),

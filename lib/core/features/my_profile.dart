@@ -1,12 +1,45 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
 import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'sign_up.dart';
 
-class MyProfileScreen extends StatelessWidget {
+class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
+
+  @override
+  State<MyProfileScreen> createState() => _MyProfileScreenState();
+}
+
+class _MyProfileScreenState extends State<MyProfileScreen> {
+  String _memberName = 'User';
+  String _memberId = '000000000000';
+  String _branchName = 'N/A';
+  AllSummary? _allSummary;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final memberName = await AuthService.getMemberName();
+    final memberId = await AuthService.getMemberId();
+    final summary = await AuthService.getUserAllSummary();
+    final loginResponse = await AuthService.getLoginResponse();
+
+    if (mounted) {
+      setState(() {
+        _memberName = memberName;
+        _memberId = memberId;
+        _allSummary = summary;
+        if (loginResponse != null) {
+          _branchName = loginResponse.userData.branchName;
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,22 +121,16 @@ class MyProfileScreen extends StatelessWidget {
               child: SizedBox(
                 width: 132,
                 height: 26,
-                child: FutureBuilder<String>(
-                  future: AuthService.getMemberName(),
-                  builder: (context, snapshot) {
-                    final name = snapshot.data ?? 'User';
-                    return Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFF3A3A3A),
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w600,
-                        height: 0.81,
-                      ),
-                    );
-                  },
+                child: Text(
+                  _memberName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: const Color(0xFF3A3A3A),
+                    fontSize: 16,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w600,
+                    height: 0.81,
+                  ),
                 ),
               ),
             ),
@@ -111,96 +138,64 @@ class MyProfileScreen extends StatelessWidget {
             Positioned(
               left: 126,
               top: 146,
-              child: FutureBuilder<Map<String, dynamic>?>(
-                future: DatabaseHelper().getLoginResponse(),
-                builder: (context, snapshot) {
-                  String memberId = '000000000000';
-
-                  if (snapshot.hasData && snapshot.data != null) {
-                    try {
-                      final response = LoginResponse.fromJson(snapshot.data!);
-                      memberId = response.userData.id;
-                    } catch (e) {
-                      print('Error parsing member ID: $e');
-                    }
-                  }
-
-                  return Text.rich(
+              child: Text.rich(
+                TextSpan(
+                  children: [
                     TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Member Code:',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                            height: 1.08,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' $memberId',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
-                            height: 1.08,
-                          ),
-                        ),
-                      ],
+                      text: 'Member Code:',
+                      style: TextStyle(
+                        color: const Color(0xFF3A3A3A),
+                        fontSize: 12,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w700,
+                        height: 1.08,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  );
-                },
+                    TextSpan(
+                      text: ' $_memberId',
+                      style: TextStyle(
+                        color: const Color(0xFF3A3A3A),
+                        fontSize: 12,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w400,
+                        height: 1.08,
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
             // Branch Name from DB
             Positioned(
               left: 125,
               top: 166,
-              child: FutureBuilder<Map<String, dynamic>?>(
-                future: DatabaseHelper().getLoginResponse(),
-                builder: (context, snapshot) {
-                  String branchName = 'N/A';
-
-                  if (snapshot.hasData && snapshot.data != null) {
-                    try {
-                      final response = LoginResponse.fromJson(snapshot.data!);
-                      branchName = response.userData.branchName;
-                    } catch (e) {
-                      print('Error parsing branch name: $e');
-                    }
-                  }
-
-                  return Text.rich(
+              child: Text.rich(
+                TextSpan(
+                  children: [
                     TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Branch Name:',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                            height: 1.08,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' $branchName',
-                          style: TextStyle(
-                            color: const Color(0xFF3A3A3A),
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
-                            height: 1.08,
-                          ),
-                        ),
-                      ],
+                      text: 'Branch Name:',
+                      style: TextStyle(
+                        color: const Color(0xFF3A3A3A),
+                        fontSize: 12,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w700,
+                        height: 1.08,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  );
-                },
+                    TextSpan(
+                      text: ' $_branchName',
+                      style: TextStyle(
+                        color: const Color(0xFF3A3A3A),
+                        fontSize: 12,
+                        fontFamily: 'Proxima Nova',
+                        fontWeight: FontWeight.w400,
+                        height: 1.08,
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
             // Divider
@@ -509,17 +504,12 @@ class MyProfileScreen extends StatelessWidget {
               ),
             ),
             // Bottom Navigation Bar
-            BottomNavBar(
-              isProfile: true,
-              memberName: '',
-              allSummary: AllSummary(
-                memberId: '',
-                loanCount: 0,
-                loans: [],
-                savingCount: 0,
-                savings: [], marketingBanners: [],
+            if (_allSummary != null)
+              BottomNavBar(
+                isProfile: true,
+                memberName: _memberName,
+                allSummary: _allSummary,
               ),
-            ),
           ],
         ),
       ),

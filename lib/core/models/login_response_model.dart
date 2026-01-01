@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-// Main response object
 class LoginResponse {
   final int status;
   final String message;
@@ -11,9 +8,9 @@ class LoginResponse {
   final DashboardSummary dashboardSummary;
   final List<MarketingBanner> marketingBanners;
   final List<LoanTransaction> loanTransactions;
-  final SavingTransaction savingTransaction;
+  final List<SavingAccount> savingAccounts;
   final List<LoanProduct> loanProducts;
-  final AllSummary allSummary; // This will be manually constructed
+  final AllSummary allSummary;
 
   LoginResponse({
     required this.status,
@@ -25,25 +22,25 @@ class LoginResponse {
     required this.dashboardSummary,
     required this.marketingBanners,
     required this.loanTransactions,
-    required this.savingTransaction,
+    required this.savingAccounts,
     required this.loanProducts,
     required this.allSummary,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    // Parse the main fields
     final loanTransactions = (json['loan_transaction'] as List?)
             ?.map((e) => LoanTransaction.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
 
-    final savingTransaction = SavingTransaction.fromJson(
-        json['savingTransaction'] as Map<String, dynamic>? ?? {});
+    final savingAccounts = (json['savingTransaction'] as List?)
+            ?.map((e) => SavingAccount.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [];
 
-    // Manually construct the AllSummary object that the UI depends on
     final allSummary = AllSummary.fromApi(
       loanTransactions: loanTransactions,
-      savingTransaction: savingTransaction,
+      savingAccounts: savingAccounts,
       memberId: json['user_data']?['id']?.toString() ?? '',
     );
 
@@ -53,7 +50,8 @@ class LoginResponse {
       appVersion: json['app_version'] as String? ?? '',
       accessToken: json['access_token'] as String? ?? '',
       lastUpdated: json['last_updated'] as String? ?? '',
-      userData: UserData.fromJson(json['user_data'] as Map<String, dynamic>? ?? {}),
+      userData:
+          UserData.fromJson(json['user_data'] as Map<String, dynamic>? ?? {}),
       dashboardSummary: DashboardSummary.fromJson(
           json['dashboard_summery'] as Map<String, dynamic>? ?? {}),
       marketingBanners: (json['marketing_bannar'] as List?)
@@ -61,16 +59,15 @@ class LoginResponse {
               .toList() ??
           [],
       loanTransactions: loanTransactions,
-      savingTransaction: savingTransaction,
+      savingAccounts: savingAccounts,
       loanProducts: (json['loan_product'] as List?)
               ?.map((e) => LoanProduct.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      allSummary: allSummary, // Use the constructed summary
+      allSummary: allSummary,
     );
   }
 
-  // To JSON for saving to database
   Map<String, dynamic> toJson() {
     return {
       'status': status,
@@ -82,14 +79,12 @@ class LoginResponse {
       'dashboard_summery': dashboardSummary.toJson(),
       'marketing_bannar': marketingBanners.map((e) => e.toJson()).toList(),
       'loan_transaction': loanTransactions.map((e) => e.toJson()).toList(),
-      'savingTransaction': savingTransaction.toJson(),
+      'savingTransaction': savingAccounts.map((e) => e.toJson()).toList(),
       'loan_product': loanProducts.map((e) => e.toJson()).toList(),
-      // We don't need to save allSummary to JSON as it's derived data
     };
   }
 }
 
-// Represents the old AllSummary structure that the UI relies on.
 class AllSummary {
   final String memberId;
   final int loanCount;
@@ -107,41 +102,41 @@ class AllSummary {
     required this.marketingBanners,
   });
 
-  // A new factory to construct this object from the new API structure
   factory AllSummary.fromApi({
     required List<LoanTransaction> loanTransactions,
-    required SavingTransaction savingTransaction,
+    required List<SavingAccount> savingAccounts,
     required String memberId,
   }) {
-    // Create UserLoan list from the loanTransactions
     final userLoans = loanTransactions.map((lt) {
       return UserLoan(
         loanId: lt.loanId,
         customizedLoanNo: lt.customizedLoanNo,
         loanProductName: lt.productName,
         disburseDate: lt.disburseDate,
-        lastScheduleDate: lt.loanFullyPaidDate, // Assuming this mapping
+        lastScheduleDate: lt.loanFullyPaidDate,
         loanAmount: lt.totalPayableAmount.toDouble(),
         totalPayableAmount: lt.totalPayableAmount.toDouble(),
         totalRecoveredAmount: lt.totalTransactionAmount.toDouble(),
         outstandingAmount: lt.totalOutstandingAfterTransaction.toDouble(),
-        isOverdue: lt.totalOverdueTransactionAmount > 0, // Assumption
+        isOverdue: lt.totalOverdueTransactionAmount > 0,
         overdueAmount: lt.totalOverdueTransactionAmount.toDouble(),
+        isOpen: lt.isOpen == '1',
       );
     }).toList();
 
-    // Create a single UserSaving object from the aggregated savings data
-    final userSavings = [
-      UserSaving(
-        savingsId: 'main_savings', // Placeholder ID
-        code: 'SAVINGS', // Placeholder code
-        productName: 'General Savings', // Placeholder name
-        openingDate: '', // Not available in new API response
-        totalDeposit: savingTransaction.totalDepositAmount.toDouble(),
-        totalWithdraw: savingTransaction.totalWithdrawalAmount.toDouble(),
-        netSavingAmount: savingTransaction.finalBalance.toDouble(),
-      )
-    ];
+    final userSavings = savingAccounts.map((sa) {
+      return UserSaving(
+        savingsId: sa.savingId,
+        code: sa.customizedSavingNo,
+        productName: sa.productName,
+        openingDate: sa.openingDate,
+        closingDate: sa.closingDate,
+        totalDeposit: sa.totalDeposit.toDouble(),
+        totalWithdraw: sa.totalWithdraw.toDouble(),
+        netSavingAmount: sa.currentBalance.toDouble(),
+        isOpen: sa.isOpen == 1,
+      );
+    }).toList();
 
     return AllSummary(
       memberId: memberId,
@@ -149,7 +144,7 @@ class AllSummary {
       loans: userLoans,
       savingCount: userSavings.length,
       savings: userSavings,
-      marketingBanners: [], // Banners are at the top level now
+      marketingBanners: [],
     );
   }
 }
@@ -176,7 +171,8 @@ class DashboardSummary {
       loanCount: json['loan_count'] as int? ?? 0,
       loanOutstanding: (json['loan_outstanding'] as num?)?.toDouble() ?? 0.0,
       savingsCount: json['savings_count'] as int? ?? 0,
-      savingsOutstanding: (json['savings_outstanding'] as num?)?.toDouble() ?? 0.0,
+      savingsOutstanding:
+          (json['savings_outstanding'] as num?)?.toDouble() ?? 0.0,
       dueLoanCount: json['due_loan_count'] as int? ?? 0,
       dueLoanAmount: (json['due_loan_amount'] as num?)?.toDouble() ?? 0.0,
     );
@@ -293,6 +289,8 @@ class LoanTransaction {
   final String customizedLoanNo;
   final String disburseDate;
   final String loanFullyPaidDate;
+  final String isLoanFullyPaid;
+  final String isOpen;
   final int totalPayableAmount;
   final int totalTransactionAmount;
   final int totalOverdueTransactionAmount;
@@ -305,6 +303,8 @@ class LoanTransaction {
     required this.customizedLoanNo,
     required this.disburseDate,
     required this.loanFullyPaidDate,
+    required this.isLoanFullyPaid,
+    required this.isOpen,
     required this.totalPayableAmount,
     required this.totalTransactionAmount,
     required this.totalOverdueTransactionAmount,
@@ -319,6 +319,8 @@ class LoanTransaction {
       customizedLoanNo: json['customized_loan_no'] as String? ?? '',
       disburseDate: json['disburse_date'] as String? ?? '',
       loanFullyPaidDate: json['loan_fully_paid_date'] as String? ?? '',
+      isLoanFullyPaid: json['is_loan_fully_paid'] as String? ?? '0',
+      isOpen: json['is_open'] as String? ?? '0',
       totalPayableAmount: json['total_payable_amount'] as int? ?? 0,
       totalTransactionAmount: json['total_transaction_amount'] as int? ?? 0,
       totalOverdueTransactionAmount:
@@ -338,6 +340,8 @@ class LoanTransaction {
         'customized_loan_no': customizedLoanNo,
         'disburse_date': disburseDate,
         'loan_fully_paid_date': loanFullyPaidDate,
+        'is_loan_fully_paid': isLoanFullyPaid,
+        'is_open': isOpen,
         'total_payable_amount': totalPayableAmount,
         'total_transaction_amount': totalTransactionAmount,
         'total_overdue_transaction_amount': totalOverdueTransactionAmount,
@@ -346,40 +350,58 @@ class LoanTransaction {
       };
 }
 
-class SavingTransaction {
-  final int totalTransactions;
-  final int totalDepositAmount;
-  final int totalWithdrawalAmount;
-  final int finalBalance;
-  final List<SavingsTransactionItem> transactions;
+class SavingAccount {
+  final String savingId;
+  final String productName;
+  final String customizedSavingNo;
+  final String openingDate;
+  final String? closingDate;
+  final int isOpen;
+  final int totalDeposit;
+  final int totalWithdraw;
+  final int currentBalance;
+  final List<SavingTransactionDetail> transactions;
 
-  SavingTransaction({
-    required this.totalTransactions,
-    required this.totalDepositAmount,
-    required this.totalWithdrawalAmount,
-    required this.finalBalance,
+  SavingAccount({
+    required this.savingId,
+    required this.productName,
+    required this.customizedSavingNo,
+    required this.openingDate,
+    this.closingDate,
+    required this.isOpen,
+    required this.totalDeposit,
+    required this.totalWithdraw,
+    required this.currentBalance,
     required this.transactions,
   });
 
-  factory SavingTransaction.fromJson(Map<String, dynamic> json) {
-    return SavingTransaction(
-      totalTransactions: json['total_transactions'] as int? ?? 0,
-      totalDepositAmount: json['total_deposit_amount'] as int? ?? 0,
-      totalWithdrawalAmount: json['total_withdrawal_amount'] as int? ?? 0,
-      finalBalance: json['final_balance'] as int? ?? 0,
-      transactions: (json['transactions'] as List?)
-              ?.map((e) =>
-                  SavingsTransactionItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+  factory SavingAccount.fromJson(Map<String, dynamic> json) {
+    return SavingAccount(
+      savingId: json['saving_id']?.toString() ?? '',
+      productName: json['product_name'] as String? ?? '',
+      customizedSavingNo: json['customized_saving_no'] as String? ?? '',
+      openingDate: json['opening_date'] as String? ?? '',
+      closingDate: json['closing_date'] as String?,
+      isOpen: json['is_open'] as int? ?? 0,
+      totalDeposit: json['total_deposit'] as int? ?? 0,
+      totalWithdraw: json['total_withdraw'] as int? ?? 0,
+      currentBalance: json['current_balance'] as int? ?? 0,
+      transactions: (json['transactions'] as List? ?? [])
+          .map((e) => SavingTransactionDetail.fromJson(e))
+          .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'total_transactions': totalTransactions,
-        'total_deposit_amount': totalDepositAmount,
-        'total_withdrawal_amount': totalWithdrawalAmount,
-        'final_balance': finalBalance,
+        'saving_id': savingId,
+        'product_name': productName,
+        'customized_saving_no': customizedSavingNo,
+        'opening_date': openingDate,
+        'closing_date': closingDate,
+        'is_open': isOpen,
+        'total_deposit': totalDeposit,
+        'total_withdraw': totalWithdraw,
+        'current_balance': currentBalance,
         'transactions': transactions.map((e) => e.toJson()).toList(),
       };
 }
@@ -416,37 +438,39 @@ class Transaction {
       };
 }
 
-class SavingsTransactionItem {
+class SavingTransactionDetail {
   final String transactionDate;
   final int depositAmount;
-  final int withdrawalAmount;
-  final int balance;
+  final int withdrawAmount;
+  final int balanceAfterTx;
+  final String flag;
 
-  SavingsTransactionItem({
+  SavingTransactionDetail({
     required this.transactionDate,
     required this.depositAmount,
-    required this.withdrawalAmount,
-    required this.balance,
+    required this.withdrawAmount,
+    required this.balanceAfterTx,
+    required this.flag,
   });
 
-  factory SavingsTransactionItem.fromJson(Map<String, dynamic> json) {
-    return SavingsTransactionItem(
+  factory SavingTransactionDetail.fromJson(Map<String, dynamic> json) {
+    return SavingTransactionDetail(
       transactionDate: json['transaction_date'] as String? ?? '',
       depositAmount: json['deposit_amount'] as int? ?? 0,
-      withdrawalAmount: json['withdrawal_amount'] as int? ?? 0,
-      balance: json['balance'] as int? ?? 0,
+      withdrawAmount: json['withdraw_amount'] as int? ?? 0,
+      balanceAfterTx: json['balance_after_tx'] as int? ?? 0,
+      flag: json['flag']?.toString() ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
         'transaction_date': transactionDate,
         'deposit_amount': depositAmount,
-        'withdrawal_amount': withdrawalAmount,
-        'balance': balance,
+        'withdraw_amount': withdrawAmount,
+        'balance_after_tx': balanceAfterTx,
+        'flag': flag,
       };
 }
-
-// --- UI Specific Models (Not directly from API) ---
 
 class UserLoan {
   final String loanId;
@@ -460,6 +484,7 @@ class UserLoan {
   final double outstandingAmount;
   final bool isOverdue;
   final double overdueAmount;
+  final bool isOpen;
 
   UserLoan({
     required this.loanId,
@@ -473,6 +498,7 @@ class UserLoan {
     required this.outstandingAmount,
     required this.isOverdue,
     required this.overdueAmount,
+    required this.isOpen,
   });
 }
 
@@ -481,17 +507,21 @@ class UserSaving {
   final String code;
   final String? productName;
   final String openingDate;
+  final String? closingDate;
   final double totalDeposit;
   final double totalWithdraw;
   final double netSavingAmount;
+  final bool isOpen;
 
   UserSaving({
     required this.savingsId,
     required this.code,
     this.productName,
     required this.openingDate,
+    this.closingDate,
     required this.totalDeposit,
     required this.totalWithdraw,
     required this.netSavingAmount,
+    required this.isOpen,
   });
 }

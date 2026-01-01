@@ -15,13 +15,30 @@ class SavingsPortfolioScreen extends StatefulWidget {
   State<SavingsPortfolioScreen> createState() => _SavingsPortfolioScreenState();
 }
 
-class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
+class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   String _lastUpdated = '';
+
+  final List<UserSaving> _activeSavings = [];
+  final List<UserSaving> _closedSavings = [];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadLastUpdated();
+    _filterSavings();
+  }
+
+  void _filterSavings() {
+    for (var saving in widget.allSummary.savings) {
+      if (saving.isOpen) {
+        _activeSavings.add(saving);
+      } else {
+        _closedSavings.add(saving);
+      }
+    }
   }
 
   Future<void> _loadLastUpdated() async {
@@ -36,7 +53,7 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
         });
       } catch (e) {
         setState(() {
-          _lastUpdated = lastUpdated; // fallback to raw string if parsing fails
+          _lastUpdated = lastUpdated;
         });
       }
     }
@@ -54,13 +71,12 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final savings = widget.allSummary.savings;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       body: Stack(
         children: [
-          // --- Header Section ---
+          // Header
           Positioned(
             left: 0,
             top: 0,
@@ -79,41 +95,31 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
               ),
             ),
           ),
-          // Screen Title
-          Positioned(
-            left: 73,
-            top: 61,
-            child: const Text(
-              'Savings Portfolio',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w500,
-                height: 1.42,
-              ),
-            ),
-          ),
-          // Back Button
+          // Title and back button
           Positioned(
             left: 20,
             top: 58,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: Colors.transparent,
+            right: 20,
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
+                const SizedBox(width: 13),
+                const Text(
+                  'Savings Portfolio',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-          // Transactions Last Updated Bar
+          // Last updated bar
           Positioned(
             left: 0,
             top: 116,
@@ -121,200 +127,69 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
               width: screenWidth,
               height: 23,
               color: const Color(0xFF05A300),
-            ),
-          ),
-          Positioned(
-            left: 76,
-            top: 121,
-            child: Text(
-              'Transactions Last Updated on $_lastUpdated',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
-                height: 1,
+              child: Center(
+                child: Text(
+                  'Transactions Last Updated on $_lastUpdated',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFamily: 'Proxima Nova',
+                  ),
+                ),
               ),
             ),
           ),
-
-          // --- Main Content Area ---
+          // Main Content
           Positioned(
-            left: 0,
             top: 139,
+            left: 0,
+            right: 0,
             bottom: 0,
-            child: Container(
-              width: screenWidth,
-              child: Stack(
-                children: [
-                  // White Background for Content
-                  Positioned.fill(
-                    top: 20,
-                    child: Container(
-                      color: const Color(0xFFF6F6F6),
+            child: Column(
+              children: [
+                // Portfolio Tabs
+                Container(
+                  color: const Color(0xFFF5F3F3),
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
+                  child: Row(
+                    children: [
+                      _buildPortfolioTab('Loan Portfolio', false, switchToLoan),
+                      const SizedBox(width: 18),
+                      _buildPortfolioTab('Savings Portfolio', true, () {}),
+                    ],
+                  ),
+                ),
+                // Active/Closed Tabs
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: const Color(0xFF0880C6),
+                    labelColor: const Color(0xFF0880C6),
+                    unselectedLabelColor: Colors.black.withOpacity(0.5),
+                    tabs: const [
+                      Tab(text: 'Active Savings'),
+                      Tab(text: 'Closed Savings'),
+                    ],
+                  ),
+                ),
+                // Tab Content
+                Expanded(
+                  child: Container(
+                    color: Colors.white,
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildSavingsList(_activeSavings, true),
+                        _buildSavingsList(_closedSavings, false),
+                      ],
                     ),
                   ),
-                  // Tab Background
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    child: Container(
-                      width: screenWidth,
-                      height: 96,
-                      color: const Color(0xFFF5F3F3),
-                    ),
-                  ),
-
-                  // Tab 1: Loan Portfolio (Inactive)
-                  Positioned(
-                    left: 20,
-                    top: 13,
-                    child: GestureDetector(
-                      onTap: switchToLoan,
-                      child: Container(
-                        width: 145,
-                        height: 46,
-                        decoration: ShapeDecoration(
-                          color: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            side: const BorderSide(
-                              width: 1,
-                              color: Color(0xFF0442BF),
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Loan Portfolio',
-                            style: const TextStyle(
-                              color: Color(0xFF0442BF),
-                              fontSize: 14,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Tab 2: Savings Portfolio (Active)
-                  Positioned(
-                    left: 183,
-                    top: 13,
-                    child: Container(
-                      width: 157,
-                      height: 46,
-                      decoration: ShapeDecoration(
-                        color: const Color(0xFF0442BF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        shadows: const [
-                          BoxShadow(
-                            color: Color(0x19000000),
-                            blurRadius: 4,
-                            offset: Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Savings Portfolio',
-                          style: const TextStyle(
-                            color: Color(0xFFF5F3F3),
-                            fontSize: 14,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // White Content Container
-                  Positioned.fill(
-                    top: 73,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(0),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // "Active Savings" / "Closed Savings" Header
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(29, 20, 29, 10),
-                            child: Row(
-                              children: [
-                                Column(
-                                  children: [
-                                    const Text(
-                                      'Active Savings',
-                                      style: TextStyle(
-                                        color: Color(0xFF0880C6),
-                                        fontSize: 12,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: 91,
-                                      height: 2,
-                                      color: const Color(0xFF0880C6),
-                                    )
-                                  ],
-                                ),
-                                const SizedBox(width: 38),
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 10),
-                                  child: Opacity(
-                                    opacity: 0.50,
-                                    child: Text(
-                                      'Closed Savings',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 12,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-
-                          // List of Savings
-                          Expanded(
-                            child: savings.isEmpty
-                                ? const Center(
-                                    child: Text('No savings accounts'))
-                                : ListView.builder(
-                                    padding: const EdgeInsets.only(
-                                        top: 20, bottom: 100),
-                                    itemCount: savings.length,
-                                    itemBuilder: (context, index) {
-                                      return _buildSavingsCard(
-                                          context, savings[index], index);
-                                    },
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-
-          // Bottom Navigation Bar
+          // Bottom Nav
           BottomNavBar(
             isHome: false,
             memberName: '',
@@ -325,41 +200,39 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
     );
   }
 
-  Widget _buildSavingsCard(BuildContext context, UserSaving saving, int index) {
-    // Alternating colors for savings cards
-    final List<Color> cardColors = [
-      const Color(0xFF023373), // Dark Blue
-      const Color(0xFF0468BF), // Light Blue
-    ];
-    final color = cardColors[index % cardColors.length];
-
-    // Initials logic: "Compulsory Savings" -> "CS"
-    String initials = 'SA';
-    final productName = saving.productName ?? saving.code;
-    if (productName.isNotEmpty) {
-      final parts = productName.trim().split(' ');
-      if (parts.length >= 2) {
-        initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-      } else {
-        initials = productName.substring(0, 1).toUpperCase();
-        if (productName.length > 1) {
-          initials += productName.substring(1, 2).toUpperCase();
-        }
-      }
+  Widget _buildSavingsList(List<UserSaving> savings, bool isActive) {
+    if (savings.isEmpty) {
+      return Center(child: Text('No ${isActive ? 'active' : 'closed'} savings accounts'));
     }
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 20, bottom: 100),
+      itemCount: savings.length,
+      itemBuilder: (context, index) {
+        return _buildSavingsCard(context, savings[index], index, isTappable: isActive);
+      },
+    );
+  }
+
+  Widget _buildSavingsCard(BuildContext context, UserSaving saving, int index, {required bool isTappable}) {
+    final color = saving.isOpen ? const Color(0xFF023373) : const Color(0xFF9B9B9B);
+    final initials = (saving.productName?.isNotEmpty == true)
+        ? saving.productName!.substring(0, 2).toUpperCase()
+        : 'SA';
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SavingsDetailsScreen(
-              savingsId: saving.savingsId,
-              productName: saving.productName ?? 'Savings Account',
-            ),
-          ),
-        );
-      },
+      onTap: isTappable
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SavingsDetailsScreen(
+                    savingsId: saving.savingsId,
+                    productName: saving.productName ?? 'Savings Account',
+                  ),
+                ),
+              );
+            }
+          : null,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         height: 150,
@@ -370,15 +243,11 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x19000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
-            )
+                color: Color(0x19000000), blurRadius: 4, offset: Offset(0, 4))
           ],
         ),
         child: Stack(
           children: [
-            // Icon Background
             Positioned(
               left: 20,
               top: 13,
@@ -387,151 +256,100 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen> {
                 height: 44,
                 decoration: ShapeDecoration(
                   color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: const Color(0xFF0080C6),
-                      fontSize: 24,
-                      fontFamily: 'Proxima Nova',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: Text(initials,
+                      style: const TextStyle(
+                          color: Color(0xFF0080C6), fontSize: 24, fontWeight: FontWeight.w700)),
                 ),
               ),
             ),
-
-            // Product Name
             Positioned(
               left: 82,
               top: 17,
-              child: SizedBox(
-                width: 140,
-                child: Text(
-                  productName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              child: Text(saving.productName ?? 'Savings', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
             ),
-
-            // ID
             Positioned(
-              left: 240,
+              right: 20,
               top: 17,
-              child: SizedBox(
-                width: 120,
-                child: Text(
-                  '#${saving.code}',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
+              child: Text('#${saving.code}', style: const TextStyle(color: Colors.white, fontSize: 12)),
             ),
-
-            // --- Data Rows ---
-
-            // Opening Date
-            Positioned(
-              left: 266,
-              top: 58,
-              right: 20,
-              child: Text(
-                saving.openingDate,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 106,
-              top: 63,
-              child: const Text(
-                'Opening Date',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 81,
-              top: 63,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0080C6),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-
-            // Total Savings Amount
-            Positioned(
-              left: 200,
-              right: 20,
-              top: 83,
-              child: Text(
-                '${saving.netSavingAmount.toStringAsFixed(0)} BDT',
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 106,
-              top: 88,
-              child: const Text(
-                'Total Savings Amount',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 81,
-              top: 88,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF9900), // Orange dot
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
+            // Savings details rows
+            _buildDetailRow('Opening Date', saving.openingDate, 58),
+            if (!saving.isOpen)
+              _buildDetailRow('Closing Date', saving.closingDate ?? 'N/A', 83),
+            if (saving.isOpen)
+              _buildDetailRow('Total Savings Amount', '${saving.netSavingAmount.toStringAsFixed(0)} BDT', 83),
+            if (!saving.isOpen)
+              _buildDetailRow('Total Deposit', '${saving.totalDeposit.toStringAsFixed(0)} BDT', 108),
+            if (!saving.isOpen)
+              _buildDetailRow('Total Withdraw', '${saving.totalWithdraw.toStringAsFixed(0)} BDT', 133),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDetailRow(String title, String value, double top) {
+    return Positioned(
+      left: 81,
+      top: top,
+      right: 20,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                    color: title == 'Opening Date' || title == 'Closing Date'
+                        ? const Color(0xFF0080C6)
+                        : const Color(0xFFFF9900),
+                    shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 15),
+              Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
+            ],
+          ),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortfolioTab(String title, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: ShapeDecoration(
+          color: isActive ? const Color(0xFF0442BF) : Colors.transparent,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(
+              width: 1,
+              color: isActive ? Colors.transparent : const Color(0xFF0442BF),
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : const Color(0xFF0442BF),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
