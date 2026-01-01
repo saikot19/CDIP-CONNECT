@@ -240,7 +240,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
           : null,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        height: 150,
+        padding: const EdgeInsets.all(16.0),
         decoration: ShapeDecoration(
           color: color,
           shape: RoundedRectangleBorder(
@@ -251,75 +251,80 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
                 color: Color(0x19000000), blurRadius: 4, offset: Offset(0, 4))
           ],
         ),
-        child: Stack(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Positioned(
-              left: 20,
-              top: 13,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Center(
+                    child: Text(letter,
+                        style: const TextStyle(
+                            color: Color(0xFF0080C6), fontSize: 26, fontWeight: FontWeight.w700)),
+                  ),
                 ),
-                child: Center(
-                  child: Text(letter,
-                      style: const TextStyle(
-                          color: Color(0xFF0080C6), fontSize: 26, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(loan.loanProductName, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text('#${loan.customizedLoanNo}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            Positioned(
-              left: 82,
-              top: 17,
-              child: Text(loan.loanProductName, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+            Column(
+              children: [
+                _buildDetailRow('Disbursement Date', loan.disburseDate, loan.isOverdue),
+                const SizedBox(height: 8),
+                _buildDetailRow('Outstanding Amount', '${loan.outstandingAmount.toStringAsFixed(0)} BDT', loan.isOverdue),
+                const SizedBox(height: 8),
+                _buildDetailRow('Overdue Amount', '${loan.overdueAmount.toStringAsFixed(0)} BDT', loan.isOverdue),
+              ],
             ),
-            Positioned(
-              right: 20,
-              top: 17,
-              child: Text('#${loan.customizedLoanNo}', style: const TextStyle(color: Colors.white, fontSize: 12)),
-            ),
-            // Loan details rows
-            _buildDetailRow('Disbursement Date', loan.disburseDate, 58, false),
-            _buildDetailRow('Outstanding Amount', '${loan.outstandingAmount.toStringAsFixed(0)} BDT', 83, false),
-            _buildDetailRow('Overdue Amount', '${loan.overdueAmount.toStringAsFixed(0)} BDT', 108, loan.isOverdue),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String title, String value, double top, bool isOverdue) {
+  Widget _buildDetailRow(String title, String value, bool isOverdue) {
     final valueColor = (title == 'Overdue Amount' && isOverdue) ? Colors.red : Colors.white;
 
-    return Positioned(
-      left: 81,
-      top: top,
-      right: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                    color: title == 'Disbursement Date'
-                        ? const Color(0xFF0080C6)
-                        : title == 'Outstanding Amount'
-                            ? const Color(0xFFFF9900)
-                            : (title == 'Overdue Amount' && isOverdue) ? Colors.red : const Color(0xFFFF0000),
-                    shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 15),
-              Text(title, style: TextStyle(color: valueColor, fontSize: 12)),
-            ],
-          ),
-          Text(value, style: TextStyle(color: valueColor, fontSize: 14, fontWeight: FontWeight.w600)),
-        ],
-      ),
+    IconData _getIconForTitle(String title) {
+      switch (title) {
+        case 'Disbursement Date':
+          return Icons.calendar_today_outlined;
+        case 'Outstanding Amount':
+          return Icons.monetization_on_outlined;
+        case 'Overdue Amount':
+          return Icons.warning_amber_rounded;
+        default:
+          return Icons.info_outline;
+      }
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(_getIconForTitle(title), color: valueColor, size: 14),
+            const SizedBox(width: 8),
+            Text(title, style: TextStyle(color: valueColor, fontSize: 12)),
+          ],
+        ),
+        Text(value, style: TextStyle(color: valueColor, fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 

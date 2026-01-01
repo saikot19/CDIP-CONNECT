@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
@@ -34,7 +35,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
+            CupertinoPageRoute(
               builder: (_) => const HomeScreen(),
             ),
           );
@@ -44,7 +45,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const SignUpScreen()),
+            CupertinoPageRoute(builder: (_) => const SignUpScreen()),
           );
         }
       } else {
@@ -52,7 +53,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const SignUpScreen()),
+          CupertinoPageRoute(builder: (_) => const SignUpScreen()),
         );
       }
     } catch (e) {
@@ -61,7 +62,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const SignUpScreen()),
+        CupertinoPageRoute(builder: (_) => const SignUpScreen()),
       );
     }
   }
@@ -87,9 +88,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   fit: BoxFit.contain,
                 ),
               ),
-            ),
-            Center(
-              child: CircularProgressIndicator(),
             ),
           ],
         ),

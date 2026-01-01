@@ -235,7 +235,7 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
           : null,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        height: 150,
+        padding: const EdgeInsets.all(16.0),
         decoration: ShapeDecoration(
           color: color,
           shape: RoundedRectangleBorder(
@@ -246,77 +246,72 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
                 color: Color(0x19000000), blurRadius: 4, offset: Offset(0, 4))
           ],
         ),
-        child: Stack(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Positioned(
-              left: 20,
-              top: 13,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Center(
+                    child: Text(initials,
+                        style: const TextStyle(
+                            color: Color(0xFF0080C6), fontSize: 24, fontWeight: FontWeight.w700)),
+                  ),
                 ),
-                child: Center(
-                  child: Text(initials,
-                      style: const TextStyle(
-                          color: Color(0xFF0080C6), fontSize: 24, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(saving.productName ?? 'Savings', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text('#${saving.code}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            Positioned(
-              left: 82,
-              top: 17,
-              child: Text(saving.productName ?? 'Savings', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+            Column(
+              children: [
+                _buildDetailRow(Icons.calendar_today_outlined,'Opening Date', saving.openingDate),
+                if (!saving.isOpen) ...[
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.calendar_today_outlined,'Closing Date', saving.closingDate ?? 'N/A'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.arrow_upward_outlined,'Total Deposit', '${saving.totalDeposit.toStringAsFixed(0)} BDT'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.arrow_downward_outlined,'Total Withdraw', '${saving.totalWithdraw.toStringAsFixed(0)} BDT'),
+                ] else ...[
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.monetization_on_outlined,'Total Savings Amount', '${saving.netSavingAmount.toStringAsFixed(0)} BDT'),
+                ]
+              ],
             ),
-            Positioned(
-              right: 20,
-              top: 17,
-              child: Text('#${saving.code}', style: const TextStyle(color: Colors.white, fontSize: 12)),
-            ),
-            // Savings details rows
-            _buildDetailRow('Opening Date', saving.openingDate, 58),
-            if (!saving.isOpen)
-              _buildDetailRow('Closing Date', saving.closingDate ?? 'N/A', 83),
-            if (saving.isOpen)
-              _buildDetailRow('Total Savings Amount', '${saving.netSavingAmount.toStringAsFixed(0)} BDT', 83),
-            if (!saving.isOpen)
-              _buildDetailRow('Total Deposit', '${saving.totalDeposit.toStringAsFixed(0)} BDT', 108),
-            if (!saving.isOpen)
-              _buildDetailRow('Total Withdraw', '${saving.totalWithdraw.toStringAsFixed(0)} BDT', 133),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String title, String value, double top) {
-    return Positioned(
-      left: 81,
-      top: top,
-      right: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                    color: title == 'Opening Date' || title == 'Closing Date'
-                        ? const Color(0xFF0080C6)
-                        : const Color(0xFFFF9900),
-                    shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 15),
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
-            ],
-          ),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-        ],
-      ),
+  Widget _buildDetailRow(IconData icon, String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 14),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
