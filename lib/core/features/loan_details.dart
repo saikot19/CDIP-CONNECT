@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../database/database_helper.dart';
 
 class LoanDetailsScreen extends StatefulWidget {
@@ -26,7 +27,18 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
 
   Future<List<Map<String, dynamic>>> _getLoanTransactions() async {
     final db = DatabaseHelper();
-    return await db.getLoanTransactions(loanId: widget.loanId);
+    return db.getLoanTransactions(loanId: widget.loanId);
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    return value.toString();
+  }
+
+  double _doubleValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
   }
 
   @override
@@ -43,7 +55,6 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Drag handle
                 Container(
                   width: 40,
                   height: 4,
@@ -53,10 +64,9 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Title
                 Text(
                   widget.productName,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 24,
                     fontFamily: 'Proxima Nova',
@@ -65,16 +75,17 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Table header
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF0080C6).withOpacity(0.10),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  child: Row(
-                    children: const [
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
+                  child: const Row(
+                    children: [
                       Expanded(
                         flex: 3,
                         child: Text(
@@ -122,15 +133,15 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                   future: _transactionsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
                         child: CircularProgressIndicator(),
                       );
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
                         child: Text(
                           'No transactions available',
                           style: TextStyle(color: Colors.grey),
@@ -139,62 +150,84 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                     }
 
                     final txns = snapshot.data!;
+                    final totalAmount = txns.fold<double>(
+                      0.0,
+                      (sum, t) => sum + _doubleValue(t['transaction_amount']),
+                    );
+
+                    final lastOutstanding = _stringValue(
+                      txns.last['transaction_principal_amount'],
+                    );
+
                     return Column(
                       children: [
-                        ...txns.map((row) => Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        row['transaction_date'],
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF21409A),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                        ...txns.map((row) {
+                          final transactionDate =
+                              _stringValue(row['transaction_date']);
+                          final transactionAmount =
+                              _doubleValue(row['transaction_amount']);
+                          final outstandingAmount = _stringValue(
+                            row['transaction_principal_amount'],
+                          );
+
+                          return Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      transactionDate,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xFF21409A),
+                                        fontSize: 12,
+                                        fontFamily: 'Proxima Nova',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        '${row['transaction_amount']} BDT',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF21409A),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                                  ),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      '${transactionAmount.toStringAsFixed(0)} BDT',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xFF21409A),
+                                        fontSize: 12,
+                                        fontFamily: 'Proxima Nova',
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
-                                    Expanded(
-                                      flex: 4,
-                                      child: Text(
-                                        '${row['transaction_principal_amount']} BDT',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF0880C6),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                  ),
+                                  Expanded(
+                                    flex: 4,
+                                    child: Text(
+                                      '$outstandingAmount BDT',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xFF0880C6),
+                                        fontSize: 12,
+                                        fontFamily: 'Proxima Nova',
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                  ],
-                                ),
-                                const Divider(
-                                    height: 18,
-                                    thickness: 0.5,
-                                    color: Colors.black12),
-                              ],
-                            )),
+                                  ),
+                                ],
+                              ),
+                              const Divider(
+                                height: 18,
+                                thickness: 0.5,
+                                color: Colors.black12,
+                              ),
+                            ],
+                          );
+                        }),
                         const Divider(
-                            height: 24, thickness: 0.5, color: Colors.black26),
-                        // Totals row
+                          height: 24,
+                          thickness: 0.5,
+                          color: Colors.black26,
+                        ),
                         Row(
                           children: [
                             const Expanded(
@@ -213,9 +246,9 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                             Expanded(
                               flex: 3,
                               child: Text(
-                                '${txns.fold(0.0, (sum, t) => sum + (t['transaction_amount'] ?? 0)).toStringAsFixed(0)} BDT',
+                                '${totalAmount.toStringAsFixed(0)} BDT',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 12,
                                   fontFamily: 'Proxima Nova',
@@ -226,9 +259,9 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                             Expanded(
                               flex: 4,
                               child: Text(
-                                '${txns.last['transaction_principal_amount']} BDT',
+                                '$lastOutstanding BDT',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 12,
                                   fontFamily: 'Proxima Nova',

@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'sign_up.dart';
@@ -27,30 +29,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     try {
       final isLoggedIn = await AuthService.isLoggedIn();
 
-      if (isLoggedIn) {
-        final allSummary = await AuthService.getUserAllSummary();
-
-        if (allSummary != null) {
-          if (!mounted) return;
-
-          Navigator.pushReplacement(
-            context,
-            CupertinoPageRoute(
-              builder: (_) => const HomeScreen(),
-            ),
-          );
-        } else {
-          // If summary is null, logout and go to sign up
-          await AuthService.logout();
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            CupertinoPageRoute(builder: (_) => const SignUpScreen()),
-          );
-        }
-      } else {
+      if (!isLoggedIn) {
         if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (_) => const SignUpScreen()),
+        );
+        return;
+      }
 
+      final LoginResponse? loginResponse = await AuthService.getLoginResponse();
+
+      final hasValidCache = loginResponse != null &&
+          loginResponse.status == 200 &&
+          loginResponse.userData.id.isNotEmpty;
+
+      if (hasValidCache) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        await AuthService.logout();
+
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           CupertinoPageRoute(builder: (_) => const SignUpScreen()),
@@ -58,8 +61,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       }
     } catch (e) {
       print('❌ Error in splash: $e');
-      if (!mounted) return;
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         CupertinoPageRoute(builder: (_) => const SignUpScreen()),

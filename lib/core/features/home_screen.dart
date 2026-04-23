@@ -1,5 +1,6 @@
 import 'package:cdip_connect/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+
 import '../database/database_helper.dart';
 import '../models/login_response_model.dart';
 import '../services/auth_service.dart';
@@ -13,24 +14,101 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late Future<String> _memberNameFuture;
-  late Future<Map<String, dynamic>?> _dashboardSummaryFuture;
+  late Future<DashboardSummary?> _dashboardSummaryFuture;
   late Future<List<MarketingBanner>> _bannersFuture;
+  late Future<AllSummary?> _allSummaryFuture;
+  late Future<bool> _updateAvailableFuture;
+
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
+
+  late AnimationController _animationController;
+  late Animation<double> _summaryFadeAnimation;
+  late Animation<Offset> _summarySlideAnimation;
+  late Animation<double> _manageFadeAnimation;
+  late Animation<Offset> _manageSlideAnimation;
+  late Animation<double> _bannerFadeAnimation;
+  late Animation<Offset> _bannerSlideAnimation;
+
+  static final AllSummary _emptySummary = AllSummary(
+    memberId: '',
+    loanCount: 0,
+    loans: [],
+    savingCount: 0,
+    savings: [],
+    marketingBanners: [],
+  );
 
   @override
   void initState() {
     super.initState();
+
     _memberNameFuture = AuthService.getMemberName();
-    _dashboardSummaryFuture = DatabaseHelper().getDashboardSummary();
+    _dashboardSummaryFuture = AuthService.getDashboardSummary();
     _bannersFuture = DatabaseHelper().getMarketingBanners();
+    _allSummaryFuture = AuthService.getUserAllSummary();
+    _updateAvailableFuture = _checkForUpdate();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _summaryFadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
+    );
+
+    _summarySlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _manageFadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.2, 0.7, curve: Curves.easeOut),
+    );
+
+    _manageSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _bannerFadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
+    );
+
+    _bannerSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _bannerController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -42,73 +120,116 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good Night';
   }
 
-  Future<AllSummary?> _getallSummary() async {
-    return await AuthService.getUserAllSummary();
+  Future<bool> _checkForUpdate() async {
+    // Keep your existing update-check flow here later.
+    return false;
   }
 
-  Future<bool> _checkForUpdate() async {
-    // TODO: Implement your update check logic here
-    // This is a placeholder implementation
-    return false;
+  String _formatCurrency(dynamic value) {
+    if (value == null) return '0.00';
+    try {
+      final numValue = double.parse(value.toString());
+      return numValue.toStringAsFixed(2);
+    } catch (_) {
+      return value.toString();
+    }
+  }
+
+  void _openLoanPortfolio(AllSummary summary) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => loan.LoanPortfolioScreen(allSummary: summary),
+      ),
+    );
+  }
+
+  void _openSavingsPortfolio(AllSummary summary) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SavingsPortfolioScreen(allSummary: summary),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedSection({
+    required Animation<double> fade,
+    required Animation<Offset> slide,
+    required Widget child,
+  }) {
+    return FadeTransition(
+      opacity: fade,
+      child: SlideTransition(
+        position: slide,
+        child: child,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
-      body: Stack(
-        children: [
-          Column(
+      body: FutureBuilder<AllSummary?>(
+        future: _allSummaryFuture,
+        builder: (context, summarySnapshot) {
+          final allSummary = summarySnapshot.data ?? _emptySummary;
+
+          return Stack(
             children: [
-              _buildHeaderAndSummary(context),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildManagePortfolio(context),
-                      const SizedBox(height: 20),
-                      _buildBottomBanner(context),
-                      const SizedBox(height: 15),
-                      _buildDotIndicators(),
-                      const SizedBox(height: 120), // Padding for BottomNavBar
-                    ],
+              Column(
+                children: [
+                  _buildHeaderAndSummary(context, allSummary),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      child: Column(
+                        children: [
+                          _buildAnimatedSection(
+                            fade: _manageFadeAnimation,
+                            slide: _manageSlideAnimation,
+                            child: _buildManagePortfolio(context, allSummary),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildAnimatedSection(
+                            fade: _bannerFadeAnimation,
+                            slide: _bannerSlideAnimation,
+                            child: Column(
+                              children: [
+                                _buildBottomBanner(context),
+                                const SizedBox(height: 15),
+                                _buildDotIndicators(),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-          FutureBuilder<String>(
-            future: _memberNameFuture,
-            builder: (context, memberSnapshot) {
-              return FutureBuilder<AllSummary?>(
-                future: _getallSummary(),
-                builder: (context, summarySnapshot) {
+              FutureBuilder<String>(
+                future: _memberNameFuture,
+                builder: (context, memberSnapshot) {
                   return BottomNavBar(
                     isHome: true,
                     memberName: memberSnapshot.data ?? '',
-                    allSummary: summarySnapshot.data ??
-                        AllSummary(
-                          memberId: '',
-                          loanCount: 0,
-                          loans: [],
-                          savingCount: 0,
-                          savings: [],
-                          marketingBanners: [],
-                        ),
+                    allSummary: allSummary,
                   );
                 },
-              );
-            },
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeaderAndSummary(BuildContext context) {
+  Widget _buildHeaderAndSummary(BuildContext context, AllSummary allSummary) {
     return Column(
       children: [
-        // Header
         Container(
           padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
           decoration: const BoxDecoration(
@@ -140,27 +261,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   GestureDetector(
                     onTap: () async {
-                      final isUpdateAvailable = await _checkForUpdate();
-                      if (mounted) {
-                        // ignore: use_build_context_synchronously
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isUpdateAvailable
-                                  ? 'New version available. Please update!'
-                                  : 'App is up to date',
-                            ),
-                            duration: const Duration(seconds: 2),
+                      final isUpdateAvailable = await _updateAvailableFuture;
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isUpdateAvailable
+                                ? 'New version available. Please update!'
+                                : 'App is up to date',
                           ),
-                        );
-                      }
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     },
                     child: Stack(
                       children: [
-                        const Icon(Icons.notifications_outlined,
-                            size: 28, color: Colors.white),
+                        const Icon(
+                          Icons.notifications_outlined,
+                          size: 28,
+                          color: Colors.white,
+                        ),
                         FutureBuilder<bool>(
-                          future: _checkForUpdate(),
+                          future: _updateAvailableFuture,
                           builder: (context, snapshot) {
                             if (snapshot.hasData && snapshot.data == true) {
                               return Positioned(
@@ -213,13 +336,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        // Summary Box - Now naturally positioned
-        _buildPortfolioSummary(context),
+        _buildAnimatedSection(
+          fade: _summaryFadeAnimation,
+          slide: _summarySlideAnimation,
+          child: _buildPortfolioSummary(context, allSummary),
+        ),
       ],
     );
   }
 
-  Widget _buildPortfolioSummary(BuildContext context) {
+  Widget _buildPortfolioSummary(BuildContext context, AllSummary allSummary) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(14),
@@ -249,22 +375,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 15),
-          FutureBuilder<Map<String, dynamic>?>(
+          FutureBuilder<DashboardSummary?>(
             future: _dashboardSummaryFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (snapshot.hasError ||
-                  !snapshot.hasData ||
-                  snapshot.data == null) {
+              final summary = snapshot.data;
+              if (summary == null) {
                 return const Text('Unable to load portfolio data');
               }
 
-              final summary = DashboardSummary.fromJson(snapshot.data!);
-
-              return _buildDashboardSummaryCards(summary);
+              return _buildDashboardSummaryCards(summary, allSummary);
             },
           ),
         ],
@@ -272,37 +395,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDashboardSummaryCards(DashboardSummary summary) {
-    String loanOutstanding = _formatCurrency(summary.loanOutstanding);
-    String savingsOutstanding = _formatCurrency(summary.savingsOutstanding);
-    String dueAmount = _formatCurrency(summary.dueLoanAmount);
+  Widget _buildDashboardSummaryCards(
+    DashboardSummary summary,
+    AllSummary allSummary,
+  ) {
+    final loanOutstanding = _formatCurrency(summary.loanOutstanding);
+    final savingsOutstanding = _formatCurrency(summary.savingsOutstanding);
+    final dueAmount = _formatCurrency(summary.dueLoanAmount);
 
     return Column(
       children: [
         GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FutureBuilder<AllSummary?>(
-                  future: _getallSummary(),
-                  builder: (context, snapshot) {
-                    return loan.LoanPortfolioScreen(
-                      allSummary: snapshot.data ??
-                          AllSummary(
-                            memberId: '',
-                            loanCount: 0,
-                            loans: [],
-                            savingCount: 0,
-                            savings: [],
-                            marketingBanners: [],
-                          ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+          onTap: () => _openLoanPortfolio(allSummary),
           child: _buildSummaryCard(
             color: const Color(0xFF2370A1),
             iconAsset: 'assets/logo/flowbite_chart-pie-outline.png',
@@ -314,29 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 7),
         GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FutureBuilder<AllSummary?>(
-                  future: _getallSummary(),
-                  builder: (context, snapshot) {
-                    return SavingsPortfolioScreen(
-                      allSummary: snapshot.data ??
-                          AllSummary(
-                            memberId: '',
-                            loanCount: 0,
-                            loans: [],
-                            savingCount: 0,
-                            savings: [],
-                            marketingBanners: [],
-                          ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+          onTap: () => _openSavingsPortfolio(allSummary),
           child: _buildSummaryCard(
             color: const Color(0xFF075F63),
             iconAsset: 'assets/logo/Group.png',
@@ -357,16 +439,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
-  }
-
-  String _formatCurrency(dynamic value) {
-    if (value == null) return '0.00';
-    try {
-      final numValue = double.parse(value.toString());
-      return numValue.toStringAsFixed(2);
-    } catch (e) {
-      return value.toString();
-    }
   }
 
   Widget _buildSummaryCard({
@@ -393,32 +465,44 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                Text('$amount BDT',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '$amount BDT',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(countLabel,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-              Text(count,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                countLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                count,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ],
@@ -426,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildManagePortfolio(BuildContext context) {
+  Widget _buildManagePortfolio(BuildContext context, AllSummary allSummary) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -446,56 +530,24 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildManageButton(context, 'assets/logo/Cash in Hand.png', 'Loan',
-                () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FutureBuilder<AllSummary?>(
-                    future: _getallSummary(),
-                    builder: (context, snapshot) {
-                      return loan.LoanPortfolioScreen(
-                        allSummary: snapshot.data ??
-                            AllSummary(
-                              memberId: '',
-                              loanCount: 0,
-                              loans: [],
-                              savingCount: 0,
-                              savings: [],
-                              marketingBanners: [],
-                            ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            }),
             _buildManageButton(
-                context, 'assets/logo/Request Money.png', 'Savings', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FutureBuilder<AllSummary?>(
-                    future: _getallSummary(),
-                    builder: (context, snapshot) {
-                      return SavingsPortfolioScreen(
-                        allSummary: snapshot.data ??
-                            AllSummary(
-                              memberId: '',
-                              loanCount: 0,
-                              loans: [],
-                              savingCount: 0,
-                              savings: [],
-                              marketingBanners: [],
-                            ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            }),
+              context,
+              'assets/logo/Cash in Hand.png',
+              'Loan',
+              () => _openLoanPortfolio(allSummary),
+            ),
             _buildManageButton(
-                context, 'assets/logo/Pocket Money.png', 'Referral', () {}),
+              context,
+              'assets/logo/Request Money.png',
+              'Savings',
+              () => _openSavingsPortfolio(allSummary),
+            ),
+            _buildManageButton(
+              context,
+              'assets/logo/Pocket Money.png',
+              'Referral',
+              () {},
+            ),
           ],
         ),
       ],
@@ -503,7 +555,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildManageButton(
-      BuildContext context, String asset, String label, VoidCallback onTap) {
+    BuildContext context,
+    String asset,
+    String label,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -525,8 +581,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             child: Center(
-                child: Image.asset(asset,
-                    width: 46, height: 46, fit: BoxFit.contain)),
+              child: Image.asset(
+                asset,
+                width: 46,
+                height: 46,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -548,12 +609,12 @@ class _HomeScreenState extends State<HomeScreen> {
       future: _bannersFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
+          return const SizedBox(height: 108);
         }
 
         final banners = snapshot.data!;
 
-        return Container(
+        return SizedBox(
           height: 108,
           child: PageView.builder(
             controller: _bannerController,
@@ -595,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
       future: _bannersFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
+          return const SizedBox(height: 6);
         }
 
         final banners = snapshot.data!;
@@ -603,15 +664,19 @@ class _HomeScreenState extends State<HomeScreen> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(banners.length, (index) {
-            return Container(
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
               margin: const EdgeInsets.symmetric(horizontal: 2.5),
-              width: 6,
+              width: _currentBannerIndex == index ? 12 : 6,
               height: 6,
               decoration: ShapeDecoration(
                 color: _currentBannerIndex == index
                     ? const Color(0xFF0880C6)
                     : const Color(0xFFEBEBEB),
-                shape: const OvalBorder(),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             );
           }),

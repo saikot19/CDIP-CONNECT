@@ -17,6 +17,29 @@ class BottomNavBar extends StatelessWidget {
     this.memberName = '',
   });
 
+  void _goToHome(BuildContext context) {
+    if (isHome) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HomeScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
+  void _goToProfile(BuildContext context) {
+    if (isProfile) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyProfileScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -26,75 +49,65 @@ class BottomNavBar extends StatelessWidget {
     return Positioned(
       left: 0,
       bottom: 0,
-      child: Container(
-        width: screenWidth,
-        height: 80,
-        decoration: const ShapeDecoration(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          width: screenWidth,
+          height: 80,
+          decoration: const ShapeDecoration(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+              ),
             ),
+            shadows: [
+              BoxShadow(
+                color: Color(0x3F000000),
+                blurRadius: 15,
+                offset: Offset(0, 4),
+                spreadRadius: 0,
+              )
+            ],
           ),
-          shadows: [
-            BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 15,
-              offset: Offset(0, 4),
-              spreadRadius: 0,
-            )
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Home Icon
-            GestureDetector(
-              onTap: () {
-                if (!isHome) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HomeScreen(),
-                    ),
-                    (route) => false,
-                  );
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                color: Colors.transparent, // For larger tap area
-                child: Icon(
-                  Icons.home,
-                  size: 30,
-                  color: isHome ? activeColor : inactiveColor,
-                ),
-              ),
-            ),
-            // Profile Icon
-            GestureDetector(
-              onTap: () {
-                if (!isProfile) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MyProfileScreen(),
-                    ),
-                  );
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Material(
                 color: Colors.transparent,
-                child: Icon(
-                  Icons.person,
-                  size: 30,
-                  color: isProfile ? activeColor : inactiveColor,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: () => _goToHome(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.transparent,
+                    child: Icon(
+                      Icons.home,
+                      size: 30,
+                      color: isHome ? activeColor : inactiveColor,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: () => _goToProfile(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.transparent,
+                    child: Icon(
+                      Icons.person,
+                      size: 30,
+                      color: isProfile ? activeColor : inactiveColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

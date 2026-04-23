@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../services/auth_service.dart';
-import '../services/api_service.dart';
 import 'home_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -15,6 +15,7 @@ class SignInScreen extends ConsumerStatefulWidget {
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   String? _errorText;
   bool _isPasswordVisible = false;
   bool _isLoading = false;
@@ -25,20 +26,28 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     _phoneController.text = widget.phone;
   }
 
-  Future<void> _handleSignIn() async {
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text.trim();
-
+  String? _validateInputs(String phone, String password) {
     if (phone.isEmpty || !RegExp(r'^01\d{9}$').hasMatch(phone)) {
-      setState(() {
-        _errorText = 'Enter valid phone number';
-      });
-      return;
+      return 'Enter valid phone number';
     }
 
     if (password.isEmpty || password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null;
+  }
+
+  Future<void> _handleSignIn() async {
+    FocusScope.of(context).unfocus();
+
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+
+    final validationMessage = _validateInputs(phone, password);
+    if (validationMessage != null) {
       setState(() {
-        _errorText = 'Password must be at least 6 characters';
+        _errorText = validationMessage;
       });
       return;
     }
@@ -49,17 +58,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      final response = await ApiService.login(
-        phone: phone,
-        password: password,
-      );
+      final response = await ref.read(authProvider.notifier).login(
+            phone: phone,
+            password: password,
+          );
 
       if (response.status == 200) {
         await AuthService.saveUserSession(response);
 
         if (!mounted) return;
 
-        // Navigate without passing large objects - fetch from cache on HomeScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -67,20 +75,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
         );
       } else {
+        if (!mounted) return;
         setState(() {
-          _errorText = response.message;
+          _errorText =
+              response.message.isNotEmpty ? response.message : 'Login failed';
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorText = 'A network error occurred.';
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _clearError() {
+    if (_errorText != null) {
+      setState(() {
+        _errorText = null;
+      });
     }
   }
 
@@ -128,19 +146,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(left: 12),
-                        child:
-                            Icon(Icons.phone_android, color: Color(0xFF0880C6)),
+                        child: Icon(
+                          Icons.phone_android,
+                          color: Color(0xFF0880C6),
+                        ),
                       ),
                       Expanded(
                         child: TextField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           maxLength: 11,
+                          onChanged: (_) => _clearError(),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             counterText: '',
                             contentPadding: EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 8),
+                              vertical: 14,
+                              horizontal: 8,
+                            ),
                           ),
                           style: const TextStyle(
                             color: Color(0xFF3A3A3A),
@@ -179,6 +202,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         child: TextField(
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
+                          onChanged: (_) => _clearError(),
+                          onSubmitted: (_) {
+                            if (!_isLoading) {
+                              _handleSignIn();
+                            }
+                          },
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Enter your password',
@@ -189,7 +218,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               fontWeight: FontWeight.w400,
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 8),
+                              vertical: 14,
+                              horizontal: 8,
+                            ),
                             suffixIcon: GestureDetector(
                               onTap: () {
                                 setState(() {
@@ -210,11 +241,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             fontFamily: 'Proxima Nova',
                             fontWeight: FontWeight.w400,
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              _errorText = null;
-                            });
-                          },
                         ),
                       ),
                     ],
@@ -225,7 +251,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       _errorText!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 32),

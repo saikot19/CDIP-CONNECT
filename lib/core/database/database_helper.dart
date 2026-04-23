@@ -1,17 +1,19 @@
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:path/path.dart';
 import 'dart:convert';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
+
 import '../models/login_response_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static sqflite.Database? _database;
 
-  factory DatabaseHelper() {
-    return _instance;
-  }
+  factory DatabaseHelper() => _instance;
 
   DatabaseHelper._internal();
+
+  static const String _dbName = 'cdip_connect.db';
+  static const int _dbVersion = 9;
 
   Future<sqflite.Database> get database async {
     if (_database != null) return _database!;
@@ -21,77 +23,167 @@ class DatabaseHelper {
 
   Future<sqflite.Database> _initializeDatabase() async {
     final dbPath = await sqflite.getDatabasesPath();
-    final path = join(dbPath, 'cdip_connect.db');
+    final path = join(dbPath, _dbName);
 
     print('📁 Database path: $path');
 
-    return await sqflite.openDatabase(
+    return sqflite.openDatabase(
       path,
-      version: 8, // Incremented version for schema change
+      version: _dbVersion,
+      onConfigure: _onConfigure,
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
     );
   }
 
+  Future<void> _onConfigure(sqflite.Database db) async {
+    await db.execute('PRAGMA foreign_keys = ON');
+  }
+
   Future<void> _createTables(sqflite.Database db, int version) async {
     print('📊 Creating database tables...');
 
-    try {
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS login_response (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          response_json TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS login_response (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        response_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
 
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS loans (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          loan_id TEXT UNIQUE NOT NULL,
-          member_id TEXT NOT NULL,
-          customized_loan_no TEXT,
-          loan_product_name TEXT,
-          disburse_date TEXT,
-          last_schedule_date TEXT,
-          loan_amount REAL,
-          total_payable_amount REAL,
-          total_recovered_amount REAL,
-          outstanding_amount REAL,
-          is_overdue INTEGER,
-          overdue_amount REAL,
-          is_open INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS loans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        loan_id TEXT UNIQUE NOT NULL,
+        member_id TEXT NOT NULL,
+        customized_loan_no TEXT,
+        loan_product_name TEXT,
+        disburse_date TEXT,
+        last_schedule_date TEXT,
+        loan_amount REAL DEFAULT 0,
+        total_payable_amount REAL DEFAULT 0,
+        total_recovered_amount REAL DEFAULT 0,
+        outstanding_amount REAL DEFAULT 0,
+        is_overdue INTEGER DEFAULT 0,
+        overdue_amount REAL DEFAULT 0,
+        is_open INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
 
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        savings_id TEXT UNIQUE NOT NULL,
+        member_id TEXT NOT NULL,
+        code TEXT,
+        product_name TEXT,
+        opening_date TEXT,
+        closing_date TEXT,
+        total_deposit REAL DEFAULT 0,
+        total_withdraw REAL DEFAULT 0,
+        net_saving_amount REAL DEFAULT 0,
+        is_open INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS loan_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        loan_id TEXT NOT NULL,
+        transaction_date TEXT,
+        transaction_amount REAL DEFAULT 0,
+        transaction_principal_amount REAL DEFAULT 0,
+        transaction_interest_amount REAL DEFAULT 0,
+        FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS savings_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        savings_id TEXT NOT NULL,
+        transaction_date TEXT,
+        deposit_amount REAL DEFAULT 0,
+        withdrawal_amount REAL DEFAULT 0,
+        balance REAL DEFAULT 0,
+        flag TEXT,
+        FOREIGN KEY (savings_id) REFERENCES savings(savings_id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS marketing_banners (
+        id TEXT PRIMARY KEY,
+        image TEXT NOT NULL,
+        title TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS dashboard_summary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        loan_count INTEGER DEFAULT 0,
+        loan_outstanding REAL DEFAULT 0,
+        savings_count INTEGER DEFAULT 0,
+        savings_outstanding REAL DEFAULT 0,
+        due_loan_count INTEGER DEFAULT 0,
+        due_loan_amount REAL DEFAULT 0
+      )
+    ''');
+
+    await _createIndexes(db);
+
+    print('✅ Tables created successfully');
+  }
+
+  Future<void> _createIndexes(sqflite.Database db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_loans_member_id ON loans(member_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_savings_member_id ON savings(member_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_loan_transactions_loan_id ON loan_transactions(loan_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_savings_transactions_savings_id ON savings_transactions(savings_id)',
+    );
+  }
+
+  Future<void> _upgradeTables(
+    sqflite.Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    print('🔄 Upgrading database from v$oldVersion to v$newVersion');
+
+    if (oldVersion < 2) {
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS savings (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          savings_id TEXT UNIQUE NOT NULL,
-          member_id TEXT NOT NULL,
-          code TEXT,
-          product_name TEXT,
-          opening_date TEXT,
-          closing_date TEXT,
-          total_deposit REAL,
-          total_withdraw REAL,
-          net_saving_amount REAL,
-          is_open INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        CREATE TABLE IF NOT EXISTS marketing_banners (
+          id TEXT PRIMARY KEY,
+          image TEXT NOT NULL,
+          title TEXT
         )
       ''');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('DROP TABLE IF EXISTS loan_transactions');
+      await db.execute('DROP TABLE IF EXISTS savings_transactions');
 
       await db.execute('''
         CREATE TABLE IF NOT EXISTS loan_transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           loan_id TEXT NOT NULL,
           transaction_date TEXT,
-          transaction_amount REAL,
-          transaction_principal_amount REAL,
-          transaction_interest_amount REAL,
-          FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
+          transaction_amount REAL DEFAULT 0,
+          transaction_principal_amount REAL DEFAULT 0,
+          transaction_interest_amount REAL DEFAULT 0,
+          FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE CASCADE
         )
       ''');
 
@@ -100,81 +192,68 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           savings_id TEXT NOT NULL,
           transaction_date TEXT,
-          deposit_amount REAL,
-          withdrawal_amount REAL,
-          balance REAL,
+          deposit_amount REAL DEFAULT 0,
+          withdrawal_amount REAL DEFAULT 0,
+          balance REAL DEFAULT 0,
           flag TEXT,
-          FOREIGN KEY (savings_id) REFERENCES savings(savings_id)
+          FOREIGN KEY (savings_id) REFERENCES savings(savings_id) ON DELETE CASCADE
         )
       ''');
-      
-      await db.execute('''
-          CREATE TABLE IF NOT EXISTS marketing_banners (
-            id TEXT PRIMARY KEY,
-            image TEXT NOT NULL,
-            title TEXT
-          )
-          ''');
+    }
 
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS dashboard_summary (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          loan_count INTEGER,
-          loan_outstanding REAL,
-          savings_count INTEGER,
-          savings_outstanding REAL,
-          due_loan_count INTEGER,
-          due_loan_amount REAL
-        )
-      ''');
-
-      print('✅ Tables created successfully');
-    } catch (e) {
-      print('❌ Error creating tables: $e');
-    }
-  }
-  
-  Future<void> _upgradeTables(
-      sqflite.Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('''
-          CREATE TABLE IF NOT EXISTS marketing_banners (
-            id TEXT PRIMARY KEY,
-            image TEXT NOT NULL,
-            title TEXT
-          )
-          ''');
-    }
-    if (oldVersion < 3) {
-      await db.execute('DROP TABLE IF EXISTS loan_transactions');
-      await db.execute('DROP TABLE IF EXISTS savings_transactions');
-      await _createTables(db, newVersion);
-    }
     if (oldVersion < 4) {
-      await db
-          .execute('ALTER TABLE loans ADD COLUMN is_open INTEGER DEFAULT 0');
+      await _safeAddColumn(
+        db,
+        'loans',
+        'ALTER TABLE loans ADD COLUMN is_open INTEGER DEFAULT 0',
+      );
     }
-    if (oldVersion < 5) {
-      // This was a duplicate, do nothing.
-    }
+
     if (oldVersion < 6) {
-      await db
-          .execute('ALTER TABLE savings ADD COLUMN is_open INTEGER DEFAULT 0');
-      await db.execute('ALTER TABLE savings ADD COLUMN closing_date TEXT');
-      await db.execute('ALTER TABLE savings_transactions ADD COLUMN flag TEXT');
+      await _safeAddColumn(
+        db,
+        'savings',
+        'ALTER TABLE savings ADD COLUMN is_open INTEGER DEFAULT 0',
+      );
+      await _safeAddColumn(
+        db,
+        'savings',
+        'ALTER TABLE savings ADD COLUMN closing_date TEXT',
+      );
+      await _safeAddColumn(
+        db,
+        'savings_transactions',
+        'ALTER TABLE savings_transactions ADD COLUMN flag TEXT',
+      );
     }
-    if (oldVersion < 7) {
-       // This was a duplicate, do nothing.
-    }
-     if (oldVersion < 8) {
+
+    if (oldVersion < 8) {
       await db.execute('DROP TABLE IF EXISTS marketing_banners');
       await db.execute('''
-          CREATE TABLE IF NOT EXISTS marketing_banners (
-            id TEXT PRIMARY KEY,
-            image TEXT NOT NULL,
-            title TEXT
-          )
-          ''');
+        CREATE TABLE IF NOT EXISTS marketing_banners (
+          id TEXT PRIMARY KEY,
+          image TEXT NOT NULL,
+          title TEXT
+        )
+      ''');
+    }
+
+    if (oldVersion < 9) {
+      await _createIndexes(db);
+    }
+
+    print('✅ Database upgrade complete');
+  }
+
+  Future<void> _safeAddColumn(
+    sqflite.Database db,
+    String tableName,
+    String alterSql,
+  ) async {
+    try {
+      await db.execute(alterSql);
+    } catch (_) {
+      // Ignore duplicate column errors safely.
     }
   }
 
@@ -185,137 +264,211 @@ class DatabaseHelper {
     print('💾 Saving complete login response...');
 
     try {
-      await db.delete('login_response');
-      await db.insert('login_response', {
-        'response_json': jsonString,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      await db.transaction((txn) async {
+        await txn.delete('login_response');
+        await txn.insert('login_response', {
+          'response_json': jsonString,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
 
-      await _saveDashboardSummary(response.dashboardSummary);
-      await _saveLoansAndTransactions(
-          response.loanTransactions, response.userData.id);
-      await _saveSavingsAndTransactions(
-          response.savingAccounts, response.userData.id);
-      await _saveMarketingBanners(response.marketingBanners);
+        await _saveDashboardSummary(txn, response.dashboardSummary);
+        await _saveLoansAndTransactions(
+          txn,
+          response.loanTransactions,
+          response.userData.id,
+        );
+        await _saveSavingsAndTransactions(
+          txn,
+          response.savingAccounts,
+          response.userData.id,
+        );
+        await _saveMarketingBanners(txn, response.marketingBanners);
+      });
 
       print('✅ Complete login response saved');
     } catch (e) {
       print('❌ Error saving login response: $e');
+      rethrow;
     }
   }
 
-  Future<void> _saveDashboardSummary(DashboardSummary summary) async {
-    final db = await database;
-    try {
-      await db.delete('dashboard_summary');
-      await db.insert('dashboard_summary', summary.toJson());
-      print('✅ Dashboard summary saved');
-    } catch (e) {
-      print('❌ Error saving dashboard summary: $e');
-    }
+  Future<void> _saveDashboardSummary(
+    sqflite.DatabaseExecutor db,
+    DashboardSummary summary,
+  ) async {
+    await db.delete('dashboard_summary');
+    await db.insert('dashboard_summary', summary.toJson());
+    print('✅ Dashboard summary saved');
   }
 
   Future<void> _saveLoansAndTransactions(
-      List<LoanTransaction> loanTransactions, String memberId) async {
-    final db = await database;
-    try {
-      await db.delete('loans', where: 'member_id = ?', whereArgs: [memberId]);
-      await db.delete('loan_transactions');
+    sqflite.DatabaseExecutor db,
+    List<LoanTransaction> loanTransactions,
+    String memberId,
+  ) async {
+    final existingLoanRows = await db.query(
+      'loans',
+      columns: ['loan_id'],
+      where: 'member_id = ?',
+      whereArgs: [memberId],
+    );
 
-      for (var loan in loanTransactions) {
-        await db.insert(
-          'loans',
+    final existingLoanIds = existingLoanRows
+        .map((e) => e['loan_id']?.toString())
+        .whereType<String>()
+        .toList();
+
+    for (final loanId in existingLoanIds) {
+      await db.delete(
+        'loan_transactions',
+        where: 'loan_id = ?',
+        whereArgs: [loanId],
+      );
+    }
+
+    await db.delete('loans', where: 'member_id = ?', whereArgs: [memberId]);
+
+    final uniqueLoans = <String, LoanTransaction>{};
+    for (final loan in loanTransactions) {
+      uniqueLoans[loan.loanId] = loan;
+    }
+
+    final batch = db.batch();
+
+    for (final loan in uniqueLoans.values) {
+      batch.insert(
+        'loans',
+        {
+          'loan_id': loan.loanId,
+          'member_id': memberId,
+          'customized_loan_no': loan.customizedLoanNo,
+          'loan_product_name': loan.productName,
+          'disburse_date': loan.disburseDate,
+          'last_schedule_date': loan.loanFullyPaidDate,
+          'loan_amount': loan.totalPayableAmount.toDouble(),
+          'total_payable_amount': loan.totalPayableAmount.toDouble(),
+          'total_recovered_amount': loan.totalTransactionAmount.toDouble(),
+          'outstanding_amount':
+              loan.totalOutstandingAfterTransaction.toDouble(),
+          'is_overdue': loan.totalOverdueTransactionAmount > 0 ? 1 : 0,
+          'overdue_amount': loan.totalOverdueTransactionAmount.toDouble(),
+          'is_open': loan.isOpen == '1' ? 1 : 0,
+        },
+        conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+      );
+
+      for (final txn in loan.transactions) {
+        batch.insert(
+          'loan_transactions',
           {
             'loan_id': loan.loanId,
-            'member_id': memberId,
-            'customized_loan_no': loan.customizedLoanNo,
-            'loan_product_name': loan.productName,
-            'disburse_date': loan.disburseDate,
-            'last_schedule_date': loan.loanFullyPaidDate,
-            'loan_amount': loan.totalPayableAmount,
-            'total_payable_amount': loan.totalPayableAmount,
-            'total_recovered_amount': loan.totalTransactionAmount,
-            'outstanding_amount': loan.totalOutstandingAfterTransaction,
-            'is_overdue': (loan.totalOverdueTransactionAmount) > 0 ? 1 : 0,
-            'overdue_amount': loan.totalOverdueTransactionAmount,
-            'is_open': loan.isOpen == '1' ? 1 : 0,
+            'transaction_date': txn.transactionDate,
+            'transaction_amount': txn.transactionAmount.toDouble(),
+            'transaction_principal_amount':
+                txn.transactionPrincipalAmount.toDouble(),
+            'transaction_interest_amount':
+                txn.transactionInterestAmount.toDouble(),
           },
           conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
         );
-
-        for (var txn in loan.transactions) {
-          await db.insert('loan_transactions', {
-            'loan_id': loan.loanId,
-            'transaction_date': txn.transactionDate,
-            'transaction_amount': txn.transactionAmount,
-            'transaction_principal_amount': txn.transactionPrincipalAmount,
-            'transaction_interest_amount': txn.transactionInterestAmount,
-          });
-        }
       }
-      print('✅ Loans and transactions saved');
-    } catch (e) {
-      print('❌ Error saving loans and transactions: $e');
     }
+
+    await batch.commit(noResult: true);
+    print('✅ Loans and transactions saved');
   }
 
   Future<void> _saveSavingsAndTransactions(
-      List<SavingAccount> savingAccounts, String memberId) async {
-    final db = await database;
-    try {
-      await db.delete('savings', where: 'member_id = ?', whereArgs: [memberId]);
-      await db.delete('savings_transactions');
+    sqflite.DatabaseExecutor db,
+    List<SavingAccount> savingAccounts,
+    String memberId,
+  ) async {
+    final existingSavingRows = await db.query(
+      'savings',
+      columns: ['savings_id'],
+      where: 'member_id = ?',
+      whereArgs: [memberId],
+    );
 
-      for (var account in savingAccounts) {
-        await db.insert(
-          'savings',
+    final existingSavingIds = existingSavingRows
+        .map((e) => e['savings_id']?.toString())
+        .whereType<String>()
+        .toList();
+
+    for (final savingsId in existingSavingIds) {
+      await db.delete(
+        'savings_transactions',
+        where: 'savings_id = ?',
+        whereArgs: [savingsId],
+      );
+    }
+
+    await db.delete('savings', where: 'member_id = ?', whereArgs: [memberId]);
+
+    final uniqueSavings = <String, SavingAccount>{};
+    for (final account in savingAccounts) {
+      uniqueSavings[account.savingId] = account;
+    }
+
+    final batch = db.batch();
+
+    for (final account in uniqueSavings.values) {
+      batch.insert(
+        'savings',
+        {
+          'savings_id': account.savingId,
+          'member_id': memberId,
+          'code': account.customizedSavingNo,
+          'product_name': account.productName,
+          'opening_date': account.openingDate,
+          'closing_date': account.closingDate,
+          'total_deposit': account.totalDeposit.toDouble(),
+          'total_withdraw': account.totalWithdraw.toDouble(),
+          'net_saving_amount': account.currentBalance.toDouble(),
+          'is_open': account.isOpen,
+        },
+        conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+      );
+
+      for (final txn in account.transactions) {
+        batch.insert(
+          'savings_transactions',
           {
             'savings_id': account.savingId,
-            'member_id': memberId,
-            'code': account.customizedSavingNo,
-            'product_name': account.productName,
-            'opening_date': account.openingDate,
-            'closing_date': account.closingDate,
-            'total_deposit': account.totalDeposit,
-            'total_withdraw': account.totalWithdraw,
-            'net_saving_amount': account.currentBalance,
-            'is_open': account.isOpen,
+            'transaction_date': txn.transactionDate,
+            'deposit_amount': txn.depositAmount.toDouble(),
+            // Keep current UI-compatible column name:
+            'withdrawal_amount': txn.withdrawAmount.toDouble(),
+            // Keep current UI-compatible column name:
+            'balance': txn.balanceAfterTx.toDouble(),
+            'flag': txn.flag,
           },
           conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
         );
-
-        for (var txn in account.transactions) {
-          await db.insert('savings_transactions', {
-            'savings_id': account.savingId,
-            'transaction_date': txn.transactionDate,
-            'deposit_amount': txn.depositAmount,
-            'withdrawal_amount': txn.withdrawAmount,
-            'balance': txn.balanceAfterTx,
-            'flag': txn.flag,
-          });
-        }
       }
-      print('✅ Savings and transactions saved');
-    } catch (e) {
-      print('❌ Error saving savings and transactions: $e');
     }
+
+    await batch.commit(noResult: true);
+    print('✅ Savings and transactions saved');
   }
 
-  Future<void> _saveMarketingBanners(List<MarketingBanner> banners) async {
-    final db = await database;
-    try {
-      await db.delete('marketing_banners'); // Clear old banners
-      for (var banner in banners) {
-        await db.insert(
-          'marketing_banners',
-          banner.toJson(),
-          conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
-        );
-      }
-      print('✅ Marketing banners saved');
-    } catch (e) {
-      print('❌ Error saving marketing banners: $e');
+  Future<void> _saveMarketingBanners(
+    sqflite.DatabaseExecutor db,
+    List<MarketingBanner> banners,
+  ) async {
+    await db.delete('marketing_banners');
+
+    final batch = db.batch();
+    for (final banner in banners) {
+      batch.insert(
+        'marketing_banners',
+        banner.toJson(),
+        conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+      );
     }
+    await batch.commit(noResult: true);
+
+    print('✅ Marketing banners saved');
   }
 
   Future<List<MarketingBanner>> getMarketingBanners() async {
@@ -324,9 +477,7 @@ class DatabaseHelper {
       final result = await db.query('marketing_banners');
       if (result.isNotEmpty) {
         print('✅ Retrieved ${result.length} marketing banners');
-        return result
-            .map((row) => MarketingBanner.fromJson(row))
-            .toList();
+        return result.map((row) => MarketingBanner.fromJson(row)).toList();
       }
       print('⚠️ No marketing banners found in DB');
       return [];
@@ -358,7 +509,7 @@ class DatabaseHelper {
       final result = await db.query('login_response', limit: 1);
       if (result.isNotEmpty) {
         final jsonString = result.first['response_json'] as String;
-        final data = jsonDecode(jsonString);
+        final data = jsonDecode(jsonString) as Map<String, dynamic>;
         print('✅ Login response retrieved from DB');
         return LoginResponse.fromJson(data);
       }
@@ -377,27 +528,28 @@ class DatabaseHelper {
         'loans',
         where: 'member_id = ?',
         whereArgs: [memberId],
+        orderBy: 'created_at DESC, id DESC',
       );
 
-      return result
-          .map((row) => UserLoan(
-                loanId: row['loan_id'] as String,
-                customizedLoanNo: row['customized_loan_no'] as String,
-                loanProductName: row['loan_product_name'] as String,
-                disburseDate: row['disburse_date'] as String,
-                lastScheduleDate: row['last_schedule_date'] as String,
-                loanAmount: (row['loan_amount'] as num).toDouble(),
-                totalPayableAmount:
-                    (row['total_payable_amount'] as num).toDouble(),
-                totalRecoveredAmount:
-                    (row['total_recovered_amount'] as num).toDouble(),
-                outstandingAmount:
-                    (row['outstanding_amount'] as num).toDouble(),
-                isOverdue: (row['is_overdue'] as int) == 1,
-                overdueAmount: (row['overdue_amount'] as num).toDouble(),
-                isOpen: (row['is_open'] as int) == 1,
-              ))
-          .toList();
+      return result.map((row) {
+        return UserLoan(
+          loanId: row['loan_id']?.toString() ?? '',
+          customizedLoanNo: row['customized_loan_no']?.toString() ?? '',
+          loanProductName: row['loan_product_name']?.toString() ?? '',
+          disburseDate: row['disburse_date']?.toString() ?? '',
+          lastScheduleDate: row['last_schedule_date']?.toString() ?? '',
+          loanAmount: (row['loan_amount'] as num?)?.toDouble() ?? 0.0,
+          totalPayableAmount:
+              (row['total_payable_amount'] as num?)?.toDouble() ?? 0.0,
+          totalRecoveredAmount:
+              (row['total_recovered_amount'] as num?)?.toDouble() ?? 0.0,
+          outstandingAmount:
+              (row['outstanding_amount'] as num?)?.toDouble() ?? 0.0,
+          isOverdue: (row['is_overdue'] as int? ?? 0) == 1,
+          overdueAmount: (row['overdue_amount'] as num?)?.toDouble() ?? 0.0,
+          isOpen: (row['is_open'] as int? ?? 0) == 1,
+        );
+      }).toList();
     } catch (e) {
       print('❌ Error getting loans from DB: $e');
       return [];
@@ -411,21 +563,23 @@ class DatabaseHelper {
         'savings',
         where: 'member_id = ?',
         whereArgs: [memberId],
+        orderBy: 'created_at DESC, id DESC',
       );
 
-      return result
-          .map((row) => UserSaving(
-                savingsId: row['savings_id'] as String,
-                code: row['code'] as String,
-                productName: row['product_name'] as String?,
-                openingDate: row['opening_date'] as String,
-                closingDate: row['closing_date'] as String?,
-                totalDeposit: (row['total_deposit'] as num).toDouble(),
-                totalWithdraw: (row['total_withdraw'] as num).toDouble(),
-                netSavingAmount: (row['net_saving_amount'] as num).toDouble(),
-                isOpen: (row['is_open'] as int) == 1,
-              ))
-          .toList();
+      return result.map((row) {
+        return UserSaving(
+          savingsId: row['savings_id']?.toString() ?? '',
+          code: row['code']?.toString() ?? '',
+          productName: row['product_name']?.toString(),
+          openingDate: row['opening_date']?.toString() ?? '',
+          closingDate: row['closing_date']?.toString(),
+          totalDeposit: (row['total_deposit'] as num?)?.toDouble() ?? 0.0,
+          totalWithdraw: (row['total_withdraw'] as num?)?.toDouble() ?? 0.0,
+          netSavingAmount:
+              (row['net_saving_amount'] as num?)?.toDouble() ?? 0.0,
+          isOpen: (row['is_open'] as int? ?? 0) == 1,
+        );
+      }).toList();
     } catch (e) {
       print('❌ Error getting savings from DB: $e');
       return [];
@@ -435,19 +589,19 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getLoanTransactions(
       {String? loanId}) async {
     final db = await database;
-
     try {
-      final List<Map<String, dynamic>> result;
+      final result = loanId != null
+          ? await db.query(
+              'loan_transactions',
+              where: 'loan_id = ?',
+              whereArgs: [loanId],
+              orderBy: 'transaction_date ASC, id ASC',
+            )
+          : await db.query(
+              'loan_transactions',
+              orderBy: 'transaction_date ASC, id ASC',
+            );
 
-      if (loanId != null) {
-        result = await db.query(
-          'loan_transactions',
-          where: 'loan_id = ?',
-          whereArgs: [loanId],
-        );
-      } else {
-        result = await db.query('loan_transactions');
-      }
       print('✅ Retrieved ${result.length} loan transactions');
       return result;
     } catch (e) {
@@ -456,22 +610,22 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSavingTransactions(
-      {String? savingsId}) async {
+  Future<List<Map<String, dynamic>>> getSavingTransactions({
+    String? savingsId,
+  }) async {
     final db = await database;
-
     try {
-      final List<Map<String, dynamic>> result;
-
-      if (savingsId != null) {
-        result = await db.query(
-          'savings_transactions',
-          where: 'savings_id = ?',
-          whereArgs: [savingsId],
-        );
-      } else {
-        result = await db.query('savings_transactions');
-      }
+      final result = savingsId != null
+          ? await db.query(
+              'savings_transactions',
+              where: 'savings_id = ?',
+              whereArgs: [savingsId],
+              orderBy: 'transaction_date ASC, id ASC',
+            )
+          : await db.query(
+              'savings_transactions',
+              orderBy: 'transaction_date ASC, id ASC',
+            );
 
       print('✅ Retrieved ${result.length} saving transactions');
       return result;
@@ -485,13 +639,16 @@ class DatabaseHelper {
     final db = await database;
 
     try {
-      await db.delete('login_response');
-      await db.delete('loan_transactions');
-      await db.delete('savings_transactions');
-      await db.delete('loans');
-      await db.delete('savings');
-      await db.delete('marketing_banners'); // Clear banners too
-      await db.delete('dashboard_summary');
+      await db.transaction((txn) async {
+        await txn.delete('login_response');
+        await txn.delete('loan_transactions');
+        await txn.delete('savings_transactions');
+        await txn.delete('loans');
+        await txn.delete('savings');
+        await txn.delete('marketing_banners');
+        await txn.delete('dashboard_summary');
+      });
+
       print('✅ All data cleared from database');
     } catch (e) {
       print('❌ Error clearing data: $e');

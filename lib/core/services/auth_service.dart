@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import '../models/login_response_model.dart';
+
 import '../database/database_helper.dart';
+import '../models/login_response_model.dart';
+import 'api_service.dart';
 
 final authProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
@@ -57,7 +57,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-// Timer provider for OTP countdown
 final otpTimerProvider = StateNotifierProvider<OtpTimerNotifier, int>((ref) {
   return OtpTimerNotifier();
 });
@@ -66,7 +65,7 @@ class OtpTimerNotifier extends StateNotifier<int> {
   OtpTimerNotifier() : super(0);
 
   void startTimer() {
-    state = 240; // 4 minutes in seconds
+    state = 240;
     _startCountdown();
   }
 
@@ -78,6 +77,10 @@ class OtpTimerNotifier extends StateNotifier<int> {
       }
     });
   }
+
+  void reset() {
+    state = 0;
+  }
 }
 
 class AuthService {
@@ -85,8 +88,9 @@ class AuthService {
   static const String _keyMemberName = 'memberName';
   static const String _keyMemberId = 'memberId';
   static const String _keyAccessToken = 'accessToken';
+  static const String _keyLastUpdated = 'lastUpdated';
+  static const String _keyAppVersion = 'appVersion';
 
-  // Save user session
   static Future<void> saveUserSession(LoginResponse response) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -94,13 +98,13 @@ class AuthService {
 
       print('🔐 Saving user session...');
 
-      // Save to SharedPreferences
       await prefs.setBool(_keyIsLoggedIn, true);
       await prefs.setString(_keyMemberName, response.userData.name);
       await prefs.setString(_keyMemberId, response.userData.id);
       await prefs.setString(_keyAccessToken, response.accessToken);
+      await prefs.setString(_keyLastUpdated, response.lastUpdated);
+      await prefs.setString(_keyAppVersion, response.appVersion);
 
-      // Save complete response to SQLite
       await db.saveLoginResponse(response);
 
       print('✅ User session saved successfully');
@@ -110,31 +114,41 @@ class AuthService {
     }
   }
 
-  // Check if logged in
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_keyIsLoggedIn) ?? false;
   }
 
-  // Get member name
   static Future<String> getMemberName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyMemberName) ?? '';
   }
 
-  // Get member ID
   static Future<String> getMemberId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyMemberId) ?? '';
   }
 
-  // Get access token
   static Future<String> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyAccessToken) ?? '';
   }
 
-  // Get user all summary
+  static Future<String> getLastUpdated() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLastUpdated) ?? '';
+  }
+
+  static Future<LoginResponse?> getLoginResponse() async {
+    try {
+      final db = DatabaseHelper();
+      return await db.getLoginResponse();
+    } catch (e) {
+      print('❌ Error getting login response: $e');
+      return null;
+    }
+  }
+
   static Future<AllSummary?> getUserAllSummary() async {
     try {
       final db = DatabaseHelper();
@@ -145,22 +159,16 @@ class AuthService {
       return null;
     }
   }
-  
-    static Future<LoginResponse?> getLoginResponse() async {
-    try {
-      final db = DatabaseHelper();
-      final loginResponse = await db.getLoginResponse();
-      return loginResponse;
-    } catch (e) {
-      print('❌ Error getting login response: $e');
-      return null;
-    }
-  }
 
-  // Get dashboard summary
   static Future<DashboardSummary?> getDashboardSummary() async {
     try {
       final db = DatabaseHelper();
+
+      final row = await db.getDashboardSummary();
+      if (row != null) {
+        return DashboardSummary.fromJson(row);
+      }
+
       final loginResponse = await db.getLoginResponse();
       return loginResponse?.dashboardSummary;
     } catch (e) {
@@ -169,12 +177,10 @@ class AuthService {
     }
   }
 
-  // Logout (alias for backwards compatibility)
   static Future<void> clear() async {
     await logout();
   }
 
-  // Logout
   static Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -28,42 +28,44 @@ class LoginResponse {
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    final loanTransactions = (json['loan_transaction'] as List?)
-            ?.map((e) => LoanTransaction.fromJson(e as Map<String, dynamic>))
-            .toList() ??
+    final loanTransactions = ((json['loan_transaction'] as List?) ?? [])
+        .map((e) => LoanTransaction.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    // Support both the correct API key and the old wrong key for backward compatibility.
+    final rawSavings = (json['saving_transaction'] as List?) ??
+        (json['savingTransaction'] as List?) ??
         [];
 
-    final savingAccounts = (json['savingTransaction'] as List?)
-            ?.map((e) => SavingAccount.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [];
+    final savingAccounts = rawSavings
+        .map((e) => SavingAccount.fromJson(e as Map<String, dynamic>))
+        .toList();
 
     final allSummary = AllSummary.fromApi(
       loanTransactions: loanTransactions,
       savingAccounts: savingAccounts,
-      memberId: json['user_data']?['id']?.toString() ?? '',
+      memberId: _asString(json['user_data']?['id']),
     );
 
     return LoginResponse(
-      status: json['status'] as int? ?? 0,
-      message: json['message'] as String? ?? '',
-      appVersion: json['app_version'] as String? ?? '',
-      accessToken: json['access_token'] as String? ?? '',
-      lastUpdated: json['last_updated'] as String? ?? '',
+      status: _asInt(json['status']),
+      message: _asString(json['message']),
+      appVersion: _asString(json['app_version']),
+      accessToken: _asString(json['access_token']),
+      lastUpdated: _asString(json['last_updated']),
       userData:
-          UserData.fromJson(json['user_data'] as Map<String, dynamic>? ?? {}),
+          UserData.fromJson((json['user_data'] as Map<String, dynamic>?) ?? {}),
       dashboardSummary: DashboardSummary.fromJson(
-          json['dashboard_summery'] as Map<String, dynamic>? ?? {}),
-      marketingBanners: (json['marketing_bannar'] as List?)
-              ?.map((e) => MarketingBanner.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+        (json['dashboard_summery'] as Map<String, dynamic>?) ?? {},
+      ),
+      marketingBanners: ((json['marketing_bannar'] as List?) ?? [])
+          .map((e) => MarketingBanner.fromJson(e as Map<String, dynamic>))
+          .toList(),
       loanTransactions: loanTransactions,
       savingAccounts: savingAccounts,
-      loanProducts: (json['loan_product'] as List?)
-              ?.map((e) => LoanProduct.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      loanProducts: ((json['loan_product'] as List?) ?? [])
+          .map((e) => LoanProduct.fromJson(e as Map<String, dynamic>))
+          .toList(),
       allSummary: allSummary,
     );
   }
@@ -79,7 +81,8 @@ class LoginResponse {
       'dashboard_summery': dashboardSummary.toJson(),
       'marketing_bannar': marketingBanners.map((e) => e.toJson()).toList(),
       'loan_transaction': loanTransactions.map((e) => e.toJson()).toList(),
-      'savingTransaction': savingAccounts.map((e) => e.toJson()).toList(),
+      // Write the correct API key
+      'saving_transaction': savingAccounts.map((e) => e.toJson()).toList(),
       'loan_product': loanProducts.map((e) => e.toJson()).toList(),
     };
   }
@@ -124,11 +127,17 @@ class AllSummary {
       );
     }).toList();
 
-    final userSavings = savingAccounts.map((sa) {
+    // Deduplicate savings by savingsId so duplicate API rows do not create duplicate cards.
+    final Map<String, SavingAccount> uniqueSavingsMap = {};
+    for (final sa in savingAccounts) {
+      uniqueSavingsMap[sa.savingId] = sa;
+    }
+
+    final userSavings = uniqueSavingsMap.values.map((sa) {
       return UserSaving(
         savingsId: sa.savingId,
         code: sa.customizedSavingNo,
-        productName: sa.productName,
+        productName: sa.productName.isEmpty ? null : sa.productName,
         openingDate: sa.openingDate,
         closingDate: sa.closingDate,
         totalDeposit: sa.totalDeposit.toDouble(),
@@ -144,7 +153,7 @@ class AllSummary {
       loans: userLoans,
       savingCount: userSavings.length,
       savings: userSavings,
-      marketingBanners: [],
+      marketingBanners: const [],
     );
   }
 }
@@ -168,13 +177,12 @@ class DashboardSummary {
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {
     return DashboardSummary(
-      loanCount: json['loan_count'] as int? ?? 0,
-      loanOutstanding: (json['loan_outstanding'] as num?)?.toDouble() ?? 0.0,
-      savingsCount: json['savings_count'] as int? ?? 0,
-      savingsOutstanding:
-          (json['savings_outstanding'] as num?)?.toDouble() ?? 0.0,
-      dueLoanCount: json['due_loan_count'] as int? ?? 0,
-      dueLoanAmount: (json['due_loan_amount'] as num?)?.toDouble() ?? 0.0,
+      loanCount: _asInt(json['loan_count']),
+      loanOutstanding: _asDouble(json['loan_outstanding']),
+      savingsCount: _asInt(json['savings_count']),
+      savingsOutstanding: _asDouble(json['savings_outstanding']),
+      dueLoanCount: _asInt(json['due_loan_count']),
+      dueLoanAmount: _asDouble(json['due_loan_amount']),
     );
   }
 
@@ -193,13 +201,17 @@ class MarketingBanner {
   final String image;
   final String title;
 
-  MarketingBanner({required this.id, required this.image, required this.title});
+  MarketingBanner({
+    required this.id,
+    required this.image,
+    required this.title,
+  });
 
   factory MarketingBanner.fromJson(Map<String, dynamic> json) {
     return MarketingBanner(
-      id: json['id']?.toString() ?? '',
-      image: json['image'] as String? ?? '',
-      title: json['title'] as String? ?? '',
+      id: _asString(json['id']),
+      image: _asString(json['image']),
+      title: _asString(json['title']),
     );
   }
 
@@ -237,16 +249,16 @@ class UserData {
 
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] as String? ?? '',
-      nickName: json['nick_name'] as String?,
-      mobileNo: json['mobile_no'] as String? ?? '',
-      branchName: json['branch_name'] as String? ?? '',
-      smartId: json['smart_id'] as String? ?? '',
-      nationalId: json['national_id'] as String? ?? '',
-      samityId: json['samity_id']?.toString() ?? '',
-      originalMemberId: json['original_member_id']?.toString() ?? '',
-      branchId: json['branch_id']?.toString() ?? '',
+      id: _asString(json['id']),
+      name: _asString(json['name']),
+      nickName: json['nick_name']?.toString(),
+      mobileNo: _asString(json['mobile_no']),
+      branchName: _asString(json['branch_name']),
+      smartId: _asString(json['smart_id']),
+      nationalId: _asString(json['national_id']),
+      samityId: _asString(json['samity_id']),
+      originalMemberId: _asString(json['original_member_id']),
+      branchId: _asString(json['branch_id']),
     );
   }
 
@@ -268,12 +280,15 @@ class LoanProduct {
   final String id;
   final String name;
 
-  LoanProduct({required this.id, required this.name});
+  LoanProduct({
+    required this.id,
+    required this.name,
+  });
 
   factory LoanProduct.fromJson(Map<String, dynamic> json) {
     return LoanProduct(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] as String? ?? '',
+      id: _asString(json['id']),
+      name: _asString(json['name']),
     );
   }
 
@@ -314,23 +329,22 @@ class LoanTransaction {
 
   factory LoanTransaction.fromJson(Map<String, dynamic> json) {
     return LoanTransaction(
-      loanId: json['loan_id']?.toString() ?? '',
-      productName: json['product_name'] as String? ?? '',
-      customizedLoanNo: json['customized_loan_no'] as String? ?? '',
-      disburseDate: json['disburse_date'] as String? ?? '',
-      loanFullyPaidDate: json['loan_fully_paid_date'] as String? ?? '',
-      isLoanFullyPaid: json['is_loan_fully_paid'] as String? ?? '0',
-      isOpen: json['is_open'] as String? ?? '0',
-      totalPayableAmount: json['total_payable_amount'] as int? ?? 0,
-      totalTransactionAmount: json['total_transaction_amount'] as int? ?? 0,
+      loanId: _asString(json['loan_id']),
+      productName: _asString(json['product_name']),
+      customizedLoanNo: _asString(json['customized_loan_no']),
+      disburseDate: _asString(json['disburse_date']),
+      loanFullyPaidDate: _asString(json['loan_fully_paid_date']),
+      isLoanFullyPaid: _asString(json['is_loan_fully_paid'], fallback: '0'),
+      isOpen: _asString(json['is_open'], fallback: '0'),
+      totalPayableAmount: _asInt(json['total_payable_amount']),
+      totalTransactionAmount: _asInt(json['total_transaction_amount']),
       totalOverdueTransactionAmount:
-          json['total_overdue_transaction_amount'] as int? ?? 0,
+          _asInt(json['total_overdue_transaction_amount']),
       totalOutstandingAfterTransaction:
-          json['total_outstanding_after_transaction'] as int? ?? 0,
-      transactions: (json['transactions'] as List?)
-              ?.map((e) => Transaction.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+          _asInt(json['total_outstanding_after_transaction']),
+      transactions: ((json['transactions'] as List?) ?? [])
+          .map((e) => Transaction.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -377,17 +391,18 @@ class SavingAccount {
 
   factory SavingAccount.fromJson(Map<String, dynamic> json) {
     return SavingAccount(
-      savingId: json['saving_id']?.toString() ?? '',
-      productName: json['product_name'] as String? ?? '',
-      customizedSavingNo: json['customized_saving_no'] as String? ?? '',
-      openingDate: json['opening_date'] as String? ?? '',
-      closingDate: json['closing_date'] as String?,
-      isOpen: json['is_open'] as int? ?? 0,
-      totalDeposit: json['total_deposit'] as int? ?? 0,
-      totalWithdraw: json['total_withdraw'] as int? ?? 0,
-      currentBalance: json['current_balance'] as int? ?? 0,
-      transactions: (json['transactions'] as List? ?? [])
-          .map((e) => SavingTransactionDetail.fromJson(e))
+      savingId: _asString(json['saving_id']),
+      productName: _asString(json['product_name']),
+      customizedSavingNo: _asString(json['customized_saving_no']),
+      openingDate: _asString(json['opening_date']),
+      closingDate: json['closing_date']?.toString(),
+      isOpen: _asInt(json['is_open']),
+      totalDeposit: _asInt(json['total_deposit']),
+      totalWithdraw: _asInt(json['total_withdraw']),
+      currentBalance: _asInt(json['current_balance']),
+      transactions: ((json['transactions'] as List?) ?? [])
+          .map((e) =>
+              SavingTransactionDetail.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -421,12 +436,11 @@ class Transaction {
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      transactionDate: json['transaction_date'] as String? ?? '',
-      transactionAmount: json['transaction_amount'] as int? ?? 0,
+      transactionDate: _asString(json['transaction_date']),
+      transactionAmount: _asInt(json['transaction_amount']),
       transactionPrincipalAmount:
-          (json['transaction_principal_amount'] as num?)?.toDouble() ?? 0.0,
-      transactionInterestAmount:
-          (json['transaction_interest_amount'] as num?)?.toDouble() ?? 0.0,
+          _asDouble(json['transaction_principal_amount']),
+      transactionInterestAmount: _asDouble(json['transaction_interest_amount']),
     );
   }
 
@@ -455,11 +469,11 @@ class SavingTransactionDetail {
 
   factory SavingTransactionDetail.fromJson(Map<String, dynamic> json) {
     return SavingTransactionDetail(
-      transactionDate: json['transaction_date'] as String? ?? '',
-      depositAmount: json['deposit_amount'] as int? ?? 0,
-      withdrawAmount: json['withdraw_amount'] as int? ?? 0,
-      balanceAfterTx: json['balance_after_tx'] as int? ?? 0,
-      flag: json['flag']?.toString() ?? '',
+      transactionDate: _asString(json['transaction_date']),
+      depositAmount: _asInt(json['deposit_amount']),
+      withdrawAmount: _asInt(json['withdraw_amount']),
+      balanceAfterTx: _asInt(json['balance_after_tx']),
+      flag: _asString(json['flag']),
     );
   }
 
@@ -524,4 +538,25 @@ class UserSaving {
     required this.netSavingAmount,
     required this.isOpen,
   });
+}
+
+int _asInt(dynamic value, {int fallback = 0}) {
+  if (value == null) return fallback;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString()) ?? fallback;
+}
+
+double _asDouble(dynamic value, {double fallback = 0.0}) {
+  if (value == null) return fallback;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString()) ?? fallback;
+}
+
+String _asString(dynamic value, {String fallback = ''}) {
+  if (value == null) return fallback;
+  return value.toString();
 }
