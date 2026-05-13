@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
@@ -11,14 +14,14 @@ import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart' as loan;
 import 'package:cdip_connect/features/savings/presentation/screens/savings_portfolio_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   late Future<String> _memberNameFuture;
   late Future<DashboardSummary?> _dashboardSummaryFuture;
   late Future<List<MarketingBanner>> _bannersFuture;
@@ -83,12 +86,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String _getGreeting() {
+  String _getGreeting(AppLocalizations t) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    if (hour < 21) return 'Good Evening';
-    return 'Good Night';
+    if (hour < 12) return t.goodMorning;
+    if (hour < 17) return t.goodAfternoon;
+    if (hour < 21) return t.goodEvening;
+    return t.goodNight;
   }
 
   Future<bool> _checkForUpdate() async {
@@ -126,6 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations(ref.watch(localizationProvider));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       body: FutureBuilder<AllSummary?>(
@@ -212,8 +217,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 SnackBar(
                                   content: Text(
                                     isUpdateAvailable
-                                        ? 'New version available. Please update!'
-                                        : 'App is up to date',
+                                        ? t.newVersionAvailable
+                                        : t.appUpToDate,
                                   ),
                                   duration: const Duration(seconds: 2),
                                 ),
@@ -259,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: x(20),
                           top: y(105),
                           child: Text(
-                            '${_getGreeting()},',
+                            _getGreeting(t),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: f(16),
@@ -278,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context, snapshot) {
                               return Text(
                                 snapshot.data?.isNotEmpty == true
-                                    ? snapshot.data!
+                                    ? DisplayFormatters.firstName(snapshot.data, fallback: 'Member')
                                     : 'Member',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -318,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: x(34),
                           top: y(175),
                           child: Text(
-                            'Your Portfolio Summary',
+                            t.portfolioSummary,
                             style: TextStyle(
                               color: const Color(0xFF1E1E1E),
                               fontSize: f(16),
@@ -356,8 +361,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Positioned(
                                       left: x(34),
                                       top: y(220),
-                                      child: const Text(
-                                        'Unable to load portfolio data',
+                                      child: Text(
+                                        t.unableToLoadPortfolio,
                                       ),
                                     ),
                                   ],
@@ -375,10 +380,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: const Color(0xFF2370A1),
                                     iconAsset:
                                         'assets/logo/flowbite_chart-pie-outline.png',
-                                    title: 'Total Outstanding',
+                                    title: t.totalOutstanding,
                                     amount:
-                                        '${_formatAmount(summary.loanOutstanding)} BDT',
-                                    countLabel: 'Number of Loans',
+                                        '${_formatAmount(summary.loanOutstanding)} ${t.bdt}',
+                                    countLabel: t.noOfLoans,
                                     count: summary.loanCount.toString(),
                                     onTap: () => _openLoanPortfolio(allSummary),
                                   ),
@@ -390,10 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     top: 323,
                                     color: const Color(0xFF075F63),
                                     iconAsset: 'assets/logo/Group.png',
-                                    title: 'Total Savings',
+                                    title: t.totalSavings,
                                     amount:
-                                        '${_formatAmount(summary.savingsOutstanding)} BDT',
-                                    countLabel: 'Number of Savings',
+                                        '${_formatAmount(summary.savingsOutstanding)} ${t.bdt}',
+                                    countLabel: t.noOfSavings,
                                     count: summary.savingsCount.toString(),
                                     onTap: () =>
                                         _openSavingsPortfolio(allSummary),
@@ -407,10 +412,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: const Color(0xFFFF5959),
                                     iconAsset:
                                         'assets/logo/zondicons_minus-outline.png',
-                                    title: 'Total Due Amount',
+                                    title: t.totalDueAmount,
                                     amount:
-                                        '${_formatAmount(summary.dueLoanAmount)} BDT',
-                                    countLabel: 'Number of Due Loans',
+                                        '${_formatAmount(summary.dueLoanAmount)} ${t.bdt}',
+                                    countLabel: t.noOfDueLoans,
                                     count: summary.dueLoanCount.toString(),
                                   ),
                                 ],
@@ -422,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: x(20),
                           top: y(544),
                           child: Text(
-                            'Manage Portfolio',
+                            t.managePortfolio,
                             style: TextStyle(
                               color: const Color(0xFF1E1E1E),
                               fontSize: f(16),
@@ -439,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: 20,
                           top: 578,
                           asset: 'assets/logo/Cash in Hand.png',
-                          label: 'Loan',
+                          label: t.loan,
                           onTap: () => _openLoanPortfolio(allSummary),
                         ),
                         _buildManageButton(
@@ -449,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: 168,
                           top: 578,
                           asset: 'assets/logo/Request Money.png',
-                          label: 'Savings',
+                          label: t.savings,
                           onTap: () => _openSavingsPortfolio(allSummary),
                         ),
                         _buildManageButton(
@@ -459,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: 316,
                           top: 578,
                           asset: 'assets/logo/Pocket Money.png',
-                          label: 'Referral',
+                          label: t.referral,
                           onTap: () {},
                         ),
                         Positioned(

@@ -1,13 +1,16 @@
+import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/services/shared_preference_service.dart';
+import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
+import 'package:cdip_connect/shared/widgets/empty_portfolio_state.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_details_screen.dart';
 import 'package:cdip_connect/features/savings/presentation/screens/savings_portfolio_screen.dart';
 
-class LoanPortfolioScreen extends StatefulWidget {
+class LoanPortfolioScreen extends ConsumerStatefulWidget {
   final AllSummary allSummary;
 
   const LoanPortfolioScreen({
@@ -16,13 +19,13 @@ class LoanPortfolioScreen extends StatefulWidget {
   });
 
   @override
-  State<LoanPortfolioScreen> createState() => _LoanPortfolioScreenState();
+  ConsumerState<LoanPortfolioScreen> createState() => _LoanPortfolioScreenState();
 }
 
-class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
+class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _lastUpdated = '';
+  String _lastUpdated = 'Sync pending';
 
   final List<UserLoan> _activeLoans = [];
   final List<UserLoan> _closedLoans = [];
@@ -79,10 +82,8 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
 
     if (lastUpdated != null && lastUpdated.isNotEmpty) {
       try {
-        final dateTime = DateTime.parse(lastUpdated);
-        final formattedDate = DateFormat('d MMM y').format(dateTime);
         setState(() {
-          _lastUpdated = formattedDate;
+          _lastUpdated = DisplayFormatters.formatLastUpdated(lastUpdated);
         });
       } catch (_) {
         setState(() {
@@ -105,6 +106,8 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final t = AppLocalizations(ref.watch(localizationProvider));
+    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : _lastUpdated;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
@@ -139,8 +142,8 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
                   child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
                 const SizedBox(width: 13),
-                const Text(
-                  'Loan Portfolio',
+                Text(
+                  t.loanPortfolio,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -160,7 +163,7 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
               color: const Color(0xFF05A300),
               child: Center(
                 child: Text(
-                  'Transactions Last Updated on $_lastUpdated',
+                  '${t.transactionsLastUpdatedOn} $lastUpdatedText',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -185,10 +188,10 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
                   ),
                   child: Row(
                     children: [
-                      _buildPortfolioTab('Loan Portfolio', true, () {}),
+                      _buildPortfolioTab(t.loanPortfolio, true, () {}),
                       const SizedBox(width: 18),
                       _buildPortfolioTab(
-                        'Savings Portfolio',
+                        t.savingsPortfolio,
                         false,
                         switchToSavings,
                       ),
@@ -202,9 +205,9 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
                     indicatorColor: const Color(0xFF0880C6),
                     labelColor: const Color(0xFF0880C6),
                     unselectedLabelColor: Colors.black.withOpacity(0.5),
-                    tabs: const [
-                      Tab(text: 'Active Loan'),
-                      Tab(text: 'Closed Loan'),
+                    tabs: [
+                      Tab(text: t.activeLoan),
+                      Tab(text: t.closedLoan),
                     ],
                   ),
                 ),
@@ -214,8 +217,8 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildLoanList(_activeLoans, true),
-                        _buildLoanList(_closedLoans, false),
+                        _buildLoanList(_activeLoans, true, t),
+                        _buildLoanList(_closedLoans, false, t),
                       ],
                     ),
                   ),
@@ -233,10 +236,12 @@ class _LoanPortfolioScreenState extends State<LoanPortfolioScreen>
     );
   }
 
-  Widget _buildLoanList(List<UserLoan> loans, bool isActive) {
+  Widget _buildLoanList(List<UserLoan> loans, bool isActive, AppLocalizations t) {
     if (loans.isEmpty) {
-      return Center(
-        child: Text('No ${isActive ? 'active' : 'closed'} loans'),
+      return EmptyPortfolioState(
+        title: isActive ? t.noActiveLoansTitle : t.noClosedLoansTitle,
+        message: isActive ? t.noActiveLoansMessage : t.noClosedLoansMessage,
+        fallbackIcon: Icons.account_balance_wallet_outlined,
       );
     }
 

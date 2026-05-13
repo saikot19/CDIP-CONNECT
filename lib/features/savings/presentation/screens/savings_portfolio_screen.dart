@@ -1,24 +1,27 @@
+import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/services/shared_preference_service.dart';
+import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
+import 'package:cdip_connect/shared/widgets/empty_portfolio_state.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
 import 'package:cdip_connect/features/savings/presentation/screens/savings_details_screen.dart';
 
-class SavingsPortfolioScreen extends StatefulWidget {
+class SavingsPortfolioScreen extends ConsumerStatefulWidget {
   final AllSummary allSummary;
 
   const SavingsPortfolioScreen({super.key, required this.allSummary});
 
   @override
-  State<SavingsPortfolioScreen> createState() => _SavingsPortfolioScreenState();
+  ConsumerState<SavingsPortfolioScreen> createState() => _SavingsPortfolioScreenState();
 }
 
-class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
+class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _lastUpdated = '';
+  String _lastUpdated = 'Sync pending';
 
   final List<UserSaving> _activeSavings = [];
   final List<UserSaving> _closedSavings = [];
@@ -32,6 +35,9 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
   }
 
   void _filterSavings() {
+    _activeSavings.clear();
+    _closedSavings.clear();
+
     for (var saving in widget.allSummary.savings) {
       if (saving.isOpen) {
         _activeSavings.add(saving);
@@ -46,10 +52,8 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
     final lastUpdated = await prefsService.getLastUpdated();
     if (lastUpdated != null && lastUpdated.isNotEmpty) {
       try {
-        final dateTime = DateTime.parse(lastUpdated);
-        final formattedDate = DateFormat('d MMM y').format(dateTime);
         setState(() {
-          _lastUpdated = formattedDate;
+          _lastUpdated = DisplayFormatters.formatLastUpdated(lastUpdated);
         });
       } catch (e) {
         setState(() {
@@ -71,6 +75,8 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final t = AppLocalizations(ref.watch(localizationProvider));
+    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : _lastUpdated;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
@@ -107,8 +113,8 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
                   child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
                 const SizedBox(width: 13),
-                const Text(
-                  'Savings Portfolio',
+                Text(
+                  t.savingsPortfolio,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -129,7 +135,7 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
               color: const Color(0xFF05A300),
               child: Center(
                 child: Text(
-                  'Transactions Last Updated on $_lastUpdated',
+                  '${t.transactionsLastUpdatedOn} $lastUpdatedText',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -153,9 +159,9 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
                   padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
                   child: Row(
                     children: [
-                      _buildPortfolioTab('Loan Portfolio', false, switchToLoan),
+                      _buildPortfolioTab(t.loanPortfolio, false, switchToLoan),
                       const SizedBox(width: 18),
-                      _buildPortfolioTab('Savings Portfolio', true, () {}),
+                      _buildPortfolioTab(t.savingsPortfolio, true, () {}),
                     ],
                   ),
                 ),
@@ -167,9 +173,9 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
                     indicatorColor: const Color(0xFF0880C6),
                     labelColor: const Color(0xFF0880C6),
                     unselectedLabelColor: Colors.black.withOpacity(0.5),
-                    tabs: const [
-                      Tab(text: 'Active Savings'),
-                      Tab(text: 'Closed Savings'),
+                    tabs: [
+                      Tab(text: t.activeSavings),
+                      Tab(text: t.closedSavings),
                     ],
                   ),
                 ),
@@ -180,8 +186,8 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildSavingsList(_activeSavings, true),
-                        _buildSavingsList(_closedSavings, false),
+                        _buildSavingsList(_activeSavings, true, t),
+                        _buildSavingsList(_closedSavings, false, t),
                       ],
                     ),
                   ),
@@ -200,9 +206,13 @@ class _SavingsPortfolioScreenState extends State<SavingsPortfolioScreen>
     );
   }
 
-  Widget _buildSavingsList(List<UserSaving> savings, bool isActive) {
+  Widget _buildSavingsList(List<UserSaving> savings, bool isActive, AppLocalizations t) {
     if (savings.isEmpty) {
-      return Center(child: Text('No ${isActive ? 'active' : 'closed'} savings accounts'));
+      return EmptyPortfolioState(
+        title: isActive ? t.noActiveSavingsTitle : t.noClosedSavingsTitle,
+        message: isActive ? t.noActiveSavingsMessage : t.noClosedSavingsMessage,
+        fallbackIcon: Icons.savings_outlined,
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.only(top: 20, bottom: 100),

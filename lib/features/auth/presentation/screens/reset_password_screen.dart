@@ -1,24 +1,240 @@
-import 'package:flutter/material.dart';
+import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/app_validators.dart';
+import 'package:cdip_connect/features/auth/application/auth_flow.dart';
+import 'package:cdip_connect/features/auth/application/auth_service.dart';
+import 'package:cdip_connect/features/auth/data/services/api_service.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/otp_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/password_reset_popup.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ResetPasswordScreen extends StatelessWidget {
-  const ResetPasswordScreen({super.key});
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  final ResetPasswordMode mode;
+  final String initialPhone;
+  final String verifiedToken;
+
+  const ResetPasswordScreen({
+    super.key,
+    this.mode = ResetPasswordMode.requestOtp,
+    this.initialPhone = '',
+    this.verifiedToken = '',
+  });
+
+  @override
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  bool _isLoading = false;
+  bool _isNewPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.text = widget.initialPhone;
+  }
+
+  Future<void> _sendOtp() async {
+    FocusScope.of(context).unfocus();
+
+    final phone = _phoneController.text.trim();
+    final validationMessage = AppValidators.bangladeshPhone(phone);
+    if (validationMessage != null) {
+      setState(() => _errorText = validationMessage);
+      AppToast.showError(validationMessage);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    try {
+      final response = await ref.read(authProvider.notifier).sendOtp(phone);
+
+      if (ApiService.isSuccess(response)) {
+        AppToast.showSuccess('OTP sent successfully. Please check your phone.');
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OTPScreen(
+              phone: phone,
+              flow: OtpFlow.forgotPassword,
+            ),
+          ),
+        );
+      } else {
+        final error =
+            ApiService.messageOf(response, fallback: 'Failed to send OTP.');
+        if (!mounted) return;
+        setState(() => _errorText = error);
+        AppToast.showError(error);
+      }
+    } catch (_) {
+      const error = 'Network error occurred. Please try again.';
+      if (!mounted) return;
+      setState(() => _errorText = error);
+      AppToast.showError(error);
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updatePassword() async {
+    FocusScope.of(context).unfocus();
+
+    final phoneValidation = AppValidators.bangladeshPhone(widget.initialPhone);
+    if (phoneValidation != null) {
+      setState(() => _errorText = phoneValidation);
+      AppToast.showError(phoneValidation);
+      return;
+    }
+
+    final validationMessage = AppValidators.confirmPassword(
+      _newPasswordController.text,
+      _confirmPasswordController.text,
+    );
+
+    if (validationMessage != null) {
+      setState(() => _errorText = validationMessage);
+      AppToast.showError(validationMessage);
+      return;
+    }
+
+    if (widget.verifiedToken.trim().isEmpty) {
+      const error =
+          'Your verification token is missing. Please verify OTP again.';
+      setState(() => _errorText = error);
+      AppToast.showError(error);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    try {
+      final password = _newPasswordController.text.trim();
+      final response = await ref.read(authProvider.notifier).setPassword(
+            phone: widget.initialPhone,
+            password: password,
+            verifiedToken: widget.verifiedToken,
+          );
+
+      if (!ApiService.isSuccess(response)) {
+        final error =
+            ApiService.messageOf(response, fallback: 'Password reset failed.');
+        if (!mounted) return;
+        setState(() => _errorText = error);
+        AppToast.showError(error);
+        return;
+      }
+
+      final loginResponse = await ref.read(authProvider.notifier).login(
+            phone: widget.initialPhone,
+            password: password,
+          );
+
+      if (loginResponse.status == 200) {
+        await AuthService.saveUserSession(loginResponse);
+        AppToast.showSuccess('Password reset successfully.');
+
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const PasswordResetPopup()),
+          (route) => false,
+        );
+      } else {
+        AppToast.showSuccess('Password reset successfully. Please sign in.');
+
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SignInScreen(phone: widget.initialPhone),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (_) {
+      const error = 'Network error occurred. Please try again.';
+      if (!mounted) return;
+      setState(() => _errorText = error);
+      AppToast.showError(error);
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _clearError() {
+    if (_errorText != null) setState(() => _errorText = null);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.mode == ResetPasswordMode.requestOtp) {
+      return _buildRequestOtpScreen();
+    }
+
+    return _buildUpdatePasswordScreen();
+  }
+
+  Widget _buildRequestOtpScreen() {
+    final t = AppLocalizations(ref.watch(localizationProvider));
+
     return Scaffold(
       body: Container(
-        width: 412,
-        height: 917,
+        width: double.infinity,
+        height: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: const BoxDecoration(color: Colors.white),
         child: Stack(
           children: [
+            const Positioned(
+              right: 20,
+              top: 32,
+              child: PreAuthBranding(
+                logoWidth: 52,
+                logoHeight: 42,
+                buttonWidth: 81,
+                buttonHeight: 39,
+              ),
+            ),
+            Positioned(
+              left: 20,
+              top: 53,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const SizedBox(
+                  width: 35,
+                  height: 35,
+                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
+                ),
+              ),
+            ),
             Positioned(
               left: 20,
               top: 111,
               child: Text(
-                'Reset Password',
+                t.resetPassword,
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 30,
@@ -36,25 +252,28 @@ class ResetPasswordScreen extends StatelessWidget {
                 height: 48,
                 decoration: ShapeDecoration(
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      width: 1,
-                      color: const Color(0xFF0080C6),
-                    ),
+                    side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              left: 40,
-              top: 217,
-              child: Text(
-                '**************',
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 11,
+                  onChanged: (_) => _clearError(),
+                  decoration: const InputDecoration(
+                    hintText: '01XXXXXXXXX',
+                    counterText: '',
+                    border: InputBorder.none,
+                    contentPadding:
+                        EdgeInsets.only(left: 20, right: 12, bottom: 2),
+                  ),
+                  style: const TextStyle(
+                    color: Color(0xFF3A3A3A),
+                    fontSize: 16,
+                    fontFamily: 'Proxima Nova',
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -62,7 +281,7 @@ class ResetPasswordScreen extends StatelessWidget {
               left: 20,
               top: 179,
               child: Text(
-                'Current Password',
+                t.phoneNumberLabel,
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 10,
@@ -71,191 +290,294 @@ class ResetPasswordScreen extends StatelessWidget {
                 ),
               ),
             ),
+            if (_errorText != null)
+              Positioned(
+                left: 20,
+                top: 258,
+                child: SizedBox(
+                  width: 372,
+                  child: Text(
+                    _errorText!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              ),
             Positioned(
-              left: 349,
-              top: 213,
-              child: Container(
-                width: 24,
-                height: 24,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(),
-                child: Stack(),
+              left: 20,
+              top: 315,
+              child: GestureDetector(
+                onTap: _isLoading ? null : _sendOtp,
+                child: _GradientButton(
+                  label: t.sendOtp,
+                  isLoading: _isLoading,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdatePasswordScreen() {
+    final t = AppLocalizations(ref.watch(localizationProvider));
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: const BoxDecoration(color: Colors.white),
+        child: Stack(
+          children: [
+            const Positioned(
+              right: 20,
+              top: 32,
+              child: PreAuthBranding(
+                logoWidth: 52,
+                logoHeight: 42,
+                buttonWidth: 81,
+                buttonHeight: 39,
               ),
             ),
             Positioned(
               left: 20,
-              top: 476,
+              top: 111,
+              child: Text(
+                t.resetPassword,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 30,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w500,
+                  height: 1.13,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              top: 53,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PasswordResetPopup(),
-                    ),
-                  );
-                },
-                child: Container(
+                onTap: () => Navigator.pop(context),
+                child: const SizedBox(
+                  width: 35,
+                  height: 35,
+                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
+                ),
+              ),
+            ),
+            _PasswordField(
+              left: 20,
+              top: 201,
+              labelTop: 179,
+              label: t.newPassword,
+              controller: _newPasswordController,
+              obscureText: !_isNewPasswordVisible,
+              onChanged: (_) => _clearError(),
+              onVisibilityTap: () {
+                setState(() => _isNewPasswordVisible = !_isNewPasswordVisible);
+              },
+            ),
+            _PasswordField(
+              left: 20,
+              top: 295,
+              labelTop: 273,
+              label: t.confirmPassword,
+              controller: _confirmPasswordController,
+              obscureText: !_isConfirmPasswordVisible,
+              onChanged: (_) => _clearError(),
+              onVisibilityTap: () {
+                setState(() =>
+                    _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+              },
+            ),
+            if (_errorText != null)
+              Positioned(
+                left: 20,
+                top: 352,
+                child: SizedBox(
                   width: 372,
-                  height: 49,
-                  decoration: ShapeDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment(-0.00, 0.07),
-                      end: Alignment(1.00, 0.91),
-                      colors: [Color(0xFF21409A), Color(0xFF0080C6)],
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    shadows: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 15,
-                        offset: Offset(0, 4),
-                        spreadRadius: 0,
-                      )
-                    ],
+                  child: Text(
+                    _errorText!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'UPDATE PASSWORD',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
+                ),
+              ),
+            Positioned(
+              left: 20,
+              top: 394,
+              child: GestureDetector(
+                onTap: _isLoading ? null : _updatePassword,
+                child: _GradientButton(
+                  label: t.updatePassword,
+                  isLoading: _isLoading,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+}
+
+class _PasswordField extends StatelessWidget {
+  final double left;
+  final double top;
+  final double labelTop;
+  final String label;
+  final TextEditingController controller;
+  final bool obscureText;
+  final VoidCallback onVisibilityTap;
+  final ValueChanged<String> onChanged;
+
+  const _PasswordField({
+    required this.left,
+    required this.top,
+    required this.labelTop,
+    required this.label,
+    required this.controller,
+    required this.obscureText,
+    required this.onVisibilityTap,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned(
+            left: left,
+            top: top,
+            child: Container(
+              width: 372,
+              height: 48,
+              decoration: ShapeDecoration(
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      obscureText: obscureText,
+                      onChanged: onChanged,
+                      decoration: const InputDecoration(
+                        hintText: '**************',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.only(
+                          left: 20,
+                          right: 8,
+                          bottom: 2,
+                        ),
+                      ),
+                      style: const TextStyle(
+                        color: Color(0xFF3A3A3A),
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 295,
-              child: Container(
-                width: 372,
-                height: 48,
-                decoration: ShapeDecoration(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      width: 1,
-                      color: const Color(0xFF0080C6),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: GestureDetector(
+                      onTap: onVisibilityTap,
+                      child: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility,
+                        color: const Color(0xFF0080C6),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(5),
                   ),
-                ),
+                ],
               ),
             ),
-            Positioned(
-              left: 40,
-              top: 311,
-              child: Text(
-                '**************',
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
-                ),
+          ),
+          Positioned(
+            left: left,
+            top: labelTop,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 10,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w400,
               ),
             ),
-            Positioned(
-              left: 20,
-              top: 273,
-              child: Text(
-                'New Password',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 349,
-              top: 307,
-              child: Container(
-                width: 24,
-                height: 24,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(),
-                child: Stack(),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 394,
-              child: Container(
-                width: 372,
-                height: 48,
-                decoration: ShapeDecoration(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      width: 1,
-                      color: const Color(0xFF0080C6),
-                    ),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 40,
-              top: 410,
-              child: Text(
-                '**************',
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
-                  fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 372,
-              child: Text(
-                'Confirm New Password',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 349,
-              top: 406,
-              child: Container(
-                width: 24,
-                height: 24,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(),
-                child: Stack(),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 53,
-              child: Container(
-                width: 35,
-                height: 35,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(),
-                child: Stack(),
-              ),
-            ),
-            Positioned(
-              left: 318,
-              top: 44,
-              child: SizedBox(width: 74, height: 54, child: Stack()),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GradientButton extends StatelessWidget {
+  final String label;
+  final bool isLoading;
+
+  const _GradientButton({
+    required this.label,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 372,
+      height: 49,
+      decoration: ShapeDecoration(
+        gradient: LinearGradient(
+          begin: const Alignment(-0.00, 0.07),
+          end: const Alignment(1.00, 0.91),
+          colors: isLoading
+              ? [Colors.grey, Colors.grey]
+              : [const Color(0xFF21409A), const Color(0xFF0080C6)],
         ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x3F000000),
+            blurRadius: 15,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          )
+        ],
+      ),
+      child: Center(
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }

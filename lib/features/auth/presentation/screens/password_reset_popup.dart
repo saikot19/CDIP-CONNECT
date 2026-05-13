@@ -1,20 +1,34 @@
-import 'package:flutter/material.dart';
+import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
+import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PasswordResetPopup extends StatelessWidget {
+class PasswordResetPopup extends ConsumerWidget {
   const PasswordResetPopup({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations(ref.watch(localizationProvider));
+
     return Scaffold(
       body: Container(
-        width: 412,
-        height: 917,
+        width: double.infinity,
+        height: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: const BoxDecoration(color: Colors.white),
         child: Stack(
           children: [
-            // Success Image
+            const Positioned(
+              right: 20,
+              top: 32,
+              child: PreAuthBranding(
+                logoWidth: 52,
+                logoHeight: 42,
+                buttonWidth: 81,
+                buttonHeight: 39,
+              ),
+            ),
             Positioned(
               left: 117,
               top: 189,
@@ -27,13 +41,14 @@ class PasswordResetPopup extends StatelessWidget {
                 ),
               ),
             ),
-            // Password Reset Title
             Positioned(
-              left: 145,
+              left: 0,
+              right: 0,
               top: 365,
               child: Text(
-                'Password Reset',
-                style: TextStyle(
+                t.translate('password_reset'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
                   color: Colors.black,
                   fontSize: 20,
                   fontFamily: 'Proxima Nova',
@@ -42,15 +57,15 @@ class PasswordResetPopup extends StatelessWidget {
                 ),
               ),
             ),
-            // Success Message
             Positioned(
-              left: 70,
+              left: 40,
+              right: 40,
               top: 405,
               child: Text(
-                'Your password has been reset successfully',
+                t.translate('password_reset_success'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF3A3A3A),
+                style: const TextStyle(
+                  color: Color(0xFF3A3A3A),
                   fontSize: 14,
                   fontFamily: 'Proxima Nova',
                   fontWeight: FontWeight.w400,
@@ -58,9 +73,9 @@ class PasswordResetPopup extends StatelessWidget {
                 ),
               ),
             ),
-            // Continue to Home Page Button
             Positioned(
               left: 20,
+              right: 20,
               top: 485,
               child: GestureDetector(
                 onTap: () {
@@ -73,7 +88,6 @@ class PasswordResetPopup extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  width: 372,
                   height: 49,
                   decoration: ShapeDecoration(
                     gradient: const LinearGradient(
@@ -93,11 +107,11 @@ class PasswordResetPopup extends StatelessWidget {
                       )
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      'CONTINUE TO HOME PAGE',
+                      t.translate('continue_to_home'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontFamily: 'Proxima Nova',

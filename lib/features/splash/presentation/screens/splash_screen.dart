@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
-import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:cdip_connect/features/onboarding/presentation/screens/common_screen.dart';
+import 'package:cdip_connect/shared/models/login_response_model.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -33,7 +34,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          CupertinoPageRoute(builder: (_) => const SignUpScreen()),
+          CupertinoPageRoute(builder: (_) => const CommonScreen()),
         );
         return;
       }
@@ -56,16 +57,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          CupertinoPageRoute(builder: (_) => const SignUpScreen()),
+          CupertinoPageRoute(builder: (_) => const CommonScreen()),
         );
       }
     } catch (e) {
-      print('❌ Error in splash: $e');
+      print('Error in splash: $e');
 
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const SignUpScreen()),
+        CupertinoPageRoute(builder: (_) => const CommonScreen()),
       );
     }
   }
@@ -74,12 +75,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        width: 412,
-        height: 917,
+        width: double.infinity,
+        height: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: const BoxDecoration(color: Colors.white),
         child: Stack(
           children: [
+            const Positioned(
+              right: 20,
+              top: 32,
+              child: PreAuthBranding(
+                logoWidth: 52,
+                logoHeight: 42,
+                buttonWidth: 81,
+                buttonHeight: 39,
+              ),
+            ),
             Positioned(
               left: 101,
               top: 372,

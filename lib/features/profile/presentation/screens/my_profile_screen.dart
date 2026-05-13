@@ -1,18 +1,22 @@
+import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MyProfileScreen extends StatefulWidget {
+class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
 
   @override
-  State<MyProfileScreen> createState() => _MyProfileScreenState();
+  ConsumerState<MyProfileScreen> createState() => _MyProfileScreenState();
 }
 
-class _MyProfileScreenState extends State<MyProfileScreen> {
+class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   String _memberName = 'User';
   String _memberId = '000000000000';
   String _branchName = 'N/A';
@@ -32,7 +36,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
     if (mounted) {
       setState(() {
-        _memberName = memberName;
+        _memberName = DisplayFormatters.firstName(memberName, fallback: 'User');
         _memberId = memberId;
         _allSummary = summary;
         if (loginResponse != null) {
@@ -44,10 +48,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final language = ref.watch(localizationProvider);
+    final t = AppLocalizations(language);
+
     return Scaffold(
       body: Container(
-        width: 412,
-        height: 917,
+        width: double.infinity,
+        height: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: const BoxDecoration(color: Colors.white),
         child: Stack(
@@ -57,7 +64,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               left: 73,
               top: 56,
               child: Text(
-                'My Profile',
+                t.myProfile,
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 24,
@@ -141,7 +148,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Member Code:',
+                      text: '${t.memberCode}:',
                       style: TextStyle(
                         color: const Color(0xFF3A3A3A),
                         fontSize: 12,
@@ -173,7 +180,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Branch Name:',
+                      text: '${t.branchName}:',
                       style: TextStyle(
                         color: const Color(0xFF3A3A3A),
                         fontSize: 12,
@@ -226,7 +233,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 children: [
                   _buildProfileMenuRow(
                     icon: Icons.article_outlined,
-                    text: 'My Portfolio',
+                    text: t.myPortfolio,
                     onTap: () {
                       if (_allSummary != null) {
                         Navigator.push(
@@ -241,37 +248,45 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.language,
-                    text: 'Change Language',
-                    onTap: () {},
+                    text: t.changeLanguage,
+                    onTap: () async {
+                      final nextLanguage = language == 'bn' ? 'en' : 'bn';
+                      await ref.read(localizationProvider.notifier).changeLanguage(nextLanguage);
+                      AppToast.showSuccess(
+                        nextLanguage == 'bn'
+                            ? 'বাংলা ভাষা নির্বাচন করা হয়েছে।'
+                            : 'English language selected.',
+                      );
+                    },
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.location_on_outlined,
-                    text: 'Manage Address',
+                    text: t.manageAddress,
                     onTap: () {},
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.star_outline,
-                    text: 'Rate Us',
+                    text: t.rateUs,
                     onTap: () {},
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.info_outline,
-                    text: 'About Us',
+                    text: t.aboutUs,
                     onTap: () {},
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.privacy_tip_outlined,
-                    text: 'Privacy Policy',
+                    text: t.privacyPolicy,
                     onTap: () {},
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.description_outlined,
-                    text: 'Terms & Condition',
+                    text: t.termsCondition,
                     onTap: () {},
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.logout,
-                    text: 'Logout',
+                    text: t.logout,
                     textColor: const Color(0xFFFF737B),
                     onTap: () async {
                       await AuthService.logout();

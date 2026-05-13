@@ -13,7 +13,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static const String _dbName = 'cdip_connect.db';
-  static const int _dbVersion = 9;
+  static const int _dbVersion = 10;
 
   Future<sqflite.Database> get database async {
     if (_database != null) return _database!;
@@ -46,6 +46,20 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS login_response (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        response_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_api_responses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        response_type TEXT NOT NULL,
+        phone TEXT,
+        member_name TEXT,
+        verified_token TEXT,
+        access_token TEXT,
         response_json TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -242,6 +256,22 @@ class DatabaseHelper {
       await _createIndexes(db);
     }
 
+    if (oldVersion < 10) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auth_api_responses (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          response_type TEXT NOT NULL,
+          phone TEXT,
+          member_name TEXT,
+          verified_token TEXT,
+          access_token TEXT,
+          response_json TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+    }
+
     print('✅ Database upgrade complete');
   }
 
@@ -254,6 +284,85 @@ class DatabaseHelper {
       await db.execute(alterSql);
     } catch (_) {
       // Ignore duplicate column errors safely.
+    }
+  }
+
+  Future<void> saveAuthApiResponse({
+    required String responseType,
+    required String phone,
+    required Map<String, dynamic> response,
+  }) async {
+    final db = await database;
+
+    String memberName = '';
+    final memberDetails = response['memberDetails'];
+    if (memberDetails is List && memberDetails.isNotEmpty) {
+      final first = memberDetails.first;
+      if (first is Map) memberName = first['name']?.toString() ?? '';
+    }
+
+    final userData = response['user_data'];
+    if (memberName.isEmpty && userData is Map) {
+      memberName = userData['name']?.toString() ?? '';
+    }
+
+    await db.insert(
+      'auth_api_responses',
+      {
+        'response_type': responseType,
+        'phone': phone,
+        'member_name': memberName,
+        'verified_token': response['verified_token']?.toString() ?? '',
+        'access_token': response['access_token']?.toString() ?? '',
+        'response_json': jsonEncode(response),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getLatestAuthApiResponse({
+    required String responseType,
+    String? phone,
+  }) async {
+    final db = await database;
+    try {
+      final rows = await db.query(
+        'auth_api_responses',
+        where: phone == null ? 'response_type = ?' : 'response_type = ? AND phone = ?',
+        whereArgs: phone == null ? [responseType] : [responseType, phone],
+        orderBy: 'id DESC',
+        limit: 1,
+      );
+
+      if (rows.isEmpty) return null;
+      final jsonString = rows.first['response_json']?.toString() ?? '{}';
+      final decoded = jsonDecode(jsonString);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      return null;
+    } catch (e) {
+      print('❌ Error getting auth API response: $e');
+      return null;
+    }
+  }
+
+  Future<String> getKnownMemberNameByPhone(String phone) async {
+    final db = await database;
+    try {
+      final rows = await db.query(
+        'auth_api_responses',
+        columns: ['member_name'],
+        where: 'phone = ? AND member_name IS NOT NULL AND member_name != ?',
+        whereArgs: [phone, ''],
+        orderBy: 'id DESC',
+        limit: 1,
+      );
+      if (rows.isEmpty) return '';
+      return rows.first['member_name']?.toString() ?? '';
+    } catch (e) {
+      print('❌ Error getting member name from auth cache: $e');
+      return '';
     }
   }
 
@@ -641,6 +750,7 @@ class DatabaseHelper {
     try {
       await db.transaction((txn) async {
         await txn.delete('login_response');
+        await txn.delete('auth_api_responses');
         await txn.delete('loan_transactions');
         await txn.delete('savings_transactions');
         await txn.delete('loans');

@@ -1,3 +1,4 @@
+import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/features/onboarding/presentation/screens/common_screen.dart';
 import 'package:cdip_connect/features/splash/application/splash_provider.dart';
 import 'package:cdip_connect/features/splash/presentation/screens/splash_screen.dart';
@@ -11,9 +12,11 @@ class CdipConnectApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showSplash = ref.watch(splashProvider);
+    final languageCode = ref.watch(localizationProvider);
 
     return MaterialApp(
       title: 'CDIP Connect',
+      locale: Locale(languageCode),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         pageTransitionsTheme: const PageTransitionsTheme(

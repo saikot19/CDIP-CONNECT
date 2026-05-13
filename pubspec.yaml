@@ -30,9 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   flutter_riverpod: ^3.0.3
   dio: ^5.4.0
-  go_router: ^17.0.0
+  go_router: ^17.2.3
   flutter_secure_storage: ^10.0.0
   http: ^1.5.0
   cupertino_icons: ^1.0.8
@@ -41,7 +42,9 @@ dependencies:
   path: ^1.8.3
   intl: ^0.20.2
   fluttertoast: ^9.0.0
-  package_info_plus: ^9.0.1
+
+  package_info_plus: ^10.1.0
+  lottie: ^3.3.3
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +56,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -81,6 +86,7 @@ flutter:
     - assets\logo\Request Money.png
     - assets\logo\Cash in Hand.png
     - assets\logo\Pocket Money.png
+    - assets/icons/app_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -104,3 +110,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  remove_alpha_ios: true

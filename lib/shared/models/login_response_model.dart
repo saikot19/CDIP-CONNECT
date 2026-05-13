@@ -28,8 +28,20 @@ class LoginResponse {
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    final loanTransactions = ((json['loan_transaction'] as List?) ?? [])
-        .map((e) => LoanTransaction.fromJson(e as Map<String, dynamic>))
+    final rawLoanTransaction = json['loan_transaction'];
+    final List rawLoanTransactions;
+    if (rawLoanTransaction is List) {
+      rawLoanTransactions = rawLoanTransaction;
+    } else if (rawLoanTransaction is Map) {
+      final data = rawLoanTransaction['data'];
+      rawLoanTransactions = data is List ? data : const [];
+    } else {
+      rawLoanTransactions = const [];
+    }
+
+    final loanTransactions = rawLoanTransactions
+        .whereType<Map>()
+        .map((e) => LoanTransaction.fromJson(Map<String, dynamic>.from(e)))
         .toList();
 
     // Support both the correct API key and the old wrong key for backward compatibility.
@@ -38,7 +50,8 @@ class LoginResponse {
         [];
 
     final savingAccounts = rawSavings
-        .map((e) => SavingAccount.fromJson(e as Map<String, dynamic>))
+        .whereType<Map>()
+        .map((e) => SavingAccount.fromJson(Map<String, dynamic>.from(e)))
         .toList();
 
     final allSummary = AllSummary.fromApi(
@@ -52,19 +65,24 @@ class LoginResponse {
       message: _asString(json['message']),
       appVersion: _asString(json['app_version']),
       accessToken: _asString(json['access_token']),
-      lastUpdated: _asString(json['last_updated']),
+      lastUpdated: _asString(
+        json['last_updated'],
+        fallback: DateTime.now().toIso8601String(),
+      ),
       userData:
           UserData.fromJson((json['user_data'] as Map<String, dynamic>?) ?? {}),
       dashboardSummary: DashboardSummary.fromJson(
         (json['dashboard_summery'] as Map<String, dynamic>?) ?? {},
       ),
       marketingBanners: ((json['marketing_bannar'] as List?) ?? [])
-          .map((e) => MarketingBanner.fromJson(e as Map<String, dynamic>))
+          .whereType<Map>()
+          .map((e) => MarketingBanner.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
       loanTransactions: loanTransactions,
       savingAccounts: savingAccounts,
       loanProducts: ((json['loan_product'] as List?) ?? [])
-          .map((e) => LoanProduct.fromJson(e as Map<String, dynamic>))
+          .whereType<Map>()
+          .map((e) => LoanProduct.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
       allSummary: allSummary,
     );

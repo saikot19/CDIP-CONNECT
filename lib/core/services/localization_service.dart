@@ -42,14 +42,32 @@ class AppLocalizations {
       'sign_up': 'SIGN UP',
       'proceed': 'PROCEED',
       'verify_now': 'VERIFY NOW',
+      'sign_in': 'Sign In',
+      'phone_number_label': 'Phone Number',
+      'password': 'Password',
+      'send_otp': 'SEND OTP',
+      'powered_by': 'Powered By ',
+      'already_have_account': 'Have already any account? ',
       'update_password': 'UPDATE PASSWORD',
       'continue_to_home': 'CONTINUE TO HOME PAGE',
 
       // Home Screen
       'good_morning': 'Good Morning,',
+      'good_afternoon': 'Good Afternoon,',
+      'good_evening': 'Good Evening,',
+      'good_night': 'Good Night,',
+      'app_up_to_date': 'App is up to date',
+      'new_version_available': 'New version available. Please update!',
+      'unable_to_load_portfolio': 'Unable to load portfolio data',
       'portfolio_summary': 'Your Portfolio Summary',
       'manage_portfolio': 'Manage Portfolio',
       'outstanding': 'Outstanding',
+      'total_outstanding': 'Total Outstanding',
+      'total_savings': 'Total Savings',
+      'total_due_amount': 'Total Due Amount',
+      'no_of_loans': 'No. of Loans',
+      'no_of_savings': 'No. of Savings',
+      'no_of_due_loans': 'No. of Due Loans',
       'overdue': 'Overdue',
       'savings': 'Savings',
       'loan': 'Loan',
@@ -58,6 +76,20 @@ class AppLocalizations {
       // Portfolio
       'loan_portfolio': 'Loan Portfolio',
       'savings_portfolio': 'Savings Portfolio',
+      'active_loan': 'Active Loan',
+      'closed_loan': 'Closed Loan',
+      'active_savings': 'Active Savings',
+      'closed_savings': 'Closed Savings',
+      'transactions_last_updated_on': 'Transactions Last Updated on',
+      'sync_pending': 'Sync pending',
+      'no_active_loans_title': 'No active loans yet',
+      'no_closed_loans_title': 'No closed loans yet',
+      'no_active_savings_title': 'No active savings yet',
+      'no_closed_savings_title': 'No closed savings yet',
+      'no_active_loans_message': 'When you have an active loan, it will appear here.',
+      'no_closed_loans_message': 'Closed loan records will appear here once available.',
+      'no_active_savings_message': 'When you have an active savings account, it will appear here.',
+      'no_closed_savings_message': 'Closed savings accounts will appear here once available.',
       'loan_product': 'Loan Product',
       'savings_product': 'Savings Product',
       'disbursement_date': 'Disbursement Date',
@@ -105,15 +137,33 @@ class AppLocalizations {
       'app_name': 'সিডিআইপি কানেক্ট',
       'sign_up': 'সাইন আপ',
       'proceed': 'এগিয়ে যান',
+      'sign_in': 'সাইন ইন',
+      'phone_number_label': 'ফোন নম্বর',
+      'password': 'পাসওয়ার্ড',
+      'send_otp': 'ওটিপি পাঠান',
+      'powered_by': 'পাওয়ার্ড বাই ',
+      'already_have_account': 'ইতিমধ্যে অ্যাকাউন্ট আছে? ',
       'verify_now': 'এখনই যাচাই করুন',
       'update_password': 'পাসওয়ার্ড আপডেট করুন',
       'continue_to_home': 'হোম পেজে চলুন',
 
       // Home Screen
       'good_morning': 'সুপ্রভাত,',
+      'good_afternoon': 'শুভ অপরাহ্ন,',
+      'good_evening': 'শুভ সন্ধ্যা,',
+      'good_night': 'শুভ রাত্রি,',
+      'app_up_to_date': 'অ্যাপ আপডেটেড আছে',
+      'new_version_available': 'নতুন ভার্সন পাওয়া যাচ্ছে। অনুগ্রহ করে আপডেট করুন।',
+      'unable_to_load_portfolio': 'পোর্টফোলিও তথ্য লোড করা যায়নি',
       'portfolio_summary': 'আপনার পোর্টফোলিও সারাংশ',
       'manage_portfolio': 'পোর্টফোলিও পরিচালনা',
       'outstanding': 'বকেয়া',
+      'total_outstanding': 'মোট বকেয়া',
+      'total_savings': 'মোট সঞ্চয়',
+      'total_due_amount': 'মোট বকেয়া পরিমাণ',
+      'no_of_loans': 'ঋণের সংখ্যা',
+      'no_of_savings': 'সঞ্চয়ের সংখ্যা',
+      'no_of_due_loans': 'বকেয়া ঋণের সংখ্যা',
       'overdue': 'অতিবাহিত',
       'savings': 'সঞ্চয়',
       'loan': 'ঋণ',
@@ -122,6 +172,20 @@ class AppLocalizations {
       // Portfolio
       'loan_portfolio': 'ঋণ পোর্টফোলিও',
       'savings_portfolio': 'সঞ্চয় পোর্টফোলিও',
+      'active_loan': 'সক্রিয় ঋণ',
+      'closed_loan': 'বন্ধ ঋণ',
+      'active_savings': 'সক্রিয় সঞ্চয়',
+      'closed_savings': 'বন্ধ সঞ্চয়',
+      'transactions_last_updated_on': 'লেনদেন সর্বশেষ আপডেট',
+      'sync_pending': 'সিঙ্ক অপেক্ষমাণ',
+      'no_active_loans_title': 'কোনো সক্রিয় ঋণ নেই',
+      'no_closed_loans_title': 'কোনো বন্ধ ঋণ নেই',
+      'no_active_savings_title': 'কোনো সক্রিয় সঞ্চয় নেই',
+      'no_closed_savings_title': 'কোনো বন্ধ সঞ্চয় নেই',
+      'no_active_loans_message': 'আপনার সক্রিয় ঋণ থাকলে এখানে দেখাবে।',
+      'no_closed_loans_message': 'বন্ধ ঋণের তথ্য পাওয়া গেলে এখানে দেখাবে।',
+      'no_active_savings_message': 'আপনার সক্রিয় সঞ্চয় থাকলে এখানে দেখাবে।',
+      'no_closed_savings_message': 'বন্ধ সঞ্চয়ের তথ্য পাওয়া গেলে এখানে দেখাবে।',
       'loan_product': 'ঋণ পণ্য',
       'savings_product': 'সঞ্চয় পণ্য',
       'disbursement_date': 'বিতরণের তারিখ',
@@ -174,14 +238,41 @@ class AppLocalizations {
 
   String get appName => translate('app_name');
   String get signUp => translate('sign_up');
+  String get signIn => translate('sign_in');
   String get proceed => translate('proceed');
   String get verifyNow => translate('verify_now');
+  String get updatePassword => translate('update_password');
+  String get phoneNumberLabel => translate('phone_number_label');
+  String get password => translate('password');
+  String get sendOtp => translate('send_otp');
+  String get poweredBy => translate('powered_by');
+  String get alreadyHaveAccount => translate('already_have_account');
+  String get forgotPassword => translate('forgot_password');
+  String get otpVerification => translate('otp_verification');
+  String get resendCode => translate('resend_code');
+  String get setPassword => translate('set_password');
+  String get typePassword => translate('type_password');
+  String get resetPassword => translate('reset_password');
+  String get newPassword => translate('new_password');
+  String get confirmPassword => translate('confirm_password');
 
   // Home
   String get goodMorning => translate('good_morning');
+  String get goodAfternoon => translate('good_afternoon');
+  String get goodEvening => translate('good_evening');
+  String get goodNight => translate('good_night');
+  String get appUpToDate => translate('app_up_to_date');
+  String get newVersionAvailable => translate('new_version_available');
+  String get unableToLoadPortfolio => translate('unable_to_load_portfolio');
   String get portfolioSummary => translate('portfolio_summary');
   String get managePortfolio => translate('manage_portfolio');
   String get outstanding => translate('outstanding');
+  String get totalOutstanding => translate('total_outstanding');
+  String get totalSavings => translate('total_savings');
+  String get totalDueAmount => translate('total_due_amount');
+  String get noOfLoans => translate('no_of_loans');
+  String get noOfSavings => translate('no_of_savings');
+  String get noOfDueLoans => translate('no_of_due_loans');
   String get overdue => translate('overdue');
   String get savings => translate('savings');
   String get loan => translate('loan');
@@ -190,6 +281,20 @@ class AppLocalizations {
   // Portfolio
   String get loanPortfolio => translate('loan_portfolio');
   String get savingsPortfolio => translate('savings_portfolio');
+  String get activeLoan => translate('active_loan');
+  String get closedLoan => translate('closed_loan');
+  String get activeSavings => translate('active_savings');
+  String get closedSavings => translate('closed_savings');
+  String get transactionsLastUpdatedOn => translate('transactions_last_updated_on');
+  String get syncPending => translate('sync_pending');
+  String get noActiveLoansTitle => translate('no_active_loans_title');
+  String get noClosedLoansTitle => translate('no_closed_loans_title');
+  String get noActiveSavingsTitle => translate('no_active_savings_title');
+  String get noClosedSavingsTitle => translate('no_closed_savings_title');
+  String get noActiveLoansMessage => translate('no_active_loans_message');
+  String get noClosedLoansMessage => translate('no_closed_loans_message');
+  String get noActiveSavingsMessage => translate('no_active_savings_message');
+  String get noClosedSavingsMessage => translate('no_closed_savings_message');
   String get loanProduct => translate('loan_product');
   String get savingsProduct => translate('savings_product');
   String get disbursementDate => translate('disbursement_date');

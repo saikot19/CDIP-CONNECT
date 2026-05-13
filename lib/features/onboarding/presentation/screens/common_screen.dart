@@ -30,8 +30,8 @@ class CommonScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        width: 412,
-        height: 917,
+        width: double.infinity,
+        height: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(color: Colors.white),
         child: Stack(
