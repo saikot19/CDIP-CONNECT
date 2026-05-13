@@ -35,7 +35,7 @@ class SharedPreferenceService {
 
   Future<String?> getLastUpdated() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_lastUpdatedKey);
+    return prefs.getString(_lastUpdatedKey) ?? prefs.getString('lastUpdated');
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
