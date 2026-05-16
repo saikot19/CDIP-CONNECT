@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/display_formatters.dart';
+import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart' as loan;
 import 'package:cdip_connect/features/savings/presentation/screens/savings_portfolio_screen.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -112,7 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _openLoanPortfolio(AllSummary summary) {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => loan.LoanPortfolioScreen(allSummary: summary),
       ),
     );
@@ -121,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _openSavingsPortfolio(AllSummary summary) {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => SavingsPortfolioScreen(allSummary: summary),
       ),
     );
@@ -465,7 +467,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           top: 578,
                           asset: 'assets/logo/Pocket Money.png',
                           label: t.referral,
-                          onTap: () {},
+                          onTap: () => AppToast.showComingSoon(t.referral),
                         ),
                         Positioned(
                           left: x(20),

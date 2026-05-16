@@ -4,7 +4,7 @@ class DisplayFormatters {
   const DisplayFormatters._();
 
   static String firstName(String? value, {String fallback = ''}) {
-    final clean = (value ?? '').trim().replaceAll(RegExp(r'\\s+'), ' ');
+    final clean = (value ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
     if (clean.isEmpty) return fallback;
     return clean.split(' ').first;
   }

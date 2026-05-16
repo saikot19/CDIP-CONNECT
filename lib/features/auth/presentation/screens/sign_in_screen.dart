@@ -7,6 +7,7 @@ import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen
 import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   final String phone;
@@ -29,16 +30,38 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void initState() {
     super.initState();
     _phoneController.text = widget.phone;
-    _loadKnownMemberName();
+    _hydrateRememberedUser();
   }
 
-  Future<void> _loadKnownMemberName() async {
-    final phone = widget.phone.trim();
-    if (phone.isEmpty) return;
+  Future<void> _hydrateRememberedUser() async {
+    var phone = widget.phone.trim();
+    if (phone.isEmpty) {
+      phone = await AuthService.getRememberedPhone();
+    }
+
+    if (!mounted || phone.isEmpty) return;
+
+    if (_phoneController.text.trim().isEmpty) {
+      _phoneController.text = phone;
+    }
 
     final name = await AuthService.getKnownMemberNameByPhone(phone);
     if (!mounted || name.isEmpty) return;
     setState(() => _memberName = name);
+  }
+
+  String _friendlyLoginError(String rawMessage) {
+    final normalized = rawMessage.toLowerCase();
+    if (normalized.contains('password') ||
+        normalized.contains('credential') ||
+        normalized.contains('invalid') ||
+        normalized.contains('unauthorized')) {
+      return 'Password does not match this account. Please try again or reset your password.';
+    }
+    if (_phoneController.text.trim().isNotEmpty && _memberName.isNotEmpty) {
+      return 'Password does not match this account. Please try again or reset your password.';
+    }
+    return rawMessage.isNotEmpty ? rawMessage : 'Login failed. Please try again.';
   }
 
   String? _validateInputs(String phone, String password) {
@@ -87,11 +110,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          AppNavigation.smoothRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
       } else {
-        final error = response.message.isNotEmpty ? response.message : 'Login failed.';
+        final error = _friendlyLoginError(response.message);
         if (!mounted) return;
         setState(() => _errorText = error);
         AppToast.showError(error);
@@ -127,7 +150,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => ResetPasswordScreen(initialPhone: phone),
       ),
     );
@@ -212,11 +235,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           maxLength: 11,
-                          onChanged: (_) {
+                          onChanged: (value) async {
                             if (_memberName.isNotEmpty) {
                               setState(() => _memberName = '');
                             }
                             _clearError();
+                            if (value.trim().length == 11) {
+                              final name = await AuthService.getKnownMemberNameByPhone(value.trim());
+                              if (mounted && name.isNotEmpty) {
+                                setState(() => _memberName = name);
+                              }
+                            }
                           },
                           decoration: const InputDecoration(
                             border: InputBorder.none,

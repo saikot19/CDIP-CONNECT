@@ -30,6 +30,12 @@ class AppValidators {
     if (password.contains(RegExp(r'\s'))) {
       return 'Password cannot contain spaces.';
     }
+    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+      return 'Password must contain at least one letter.';
+    }
+    if (!RegExp(r'\d').hasMatch(password)) {
+      return 'Password must contain at least one number.';
+    }
     if (RegExp(r'^(.)\1{7,}$').hasMatch(password)) {
       return 'Please use a stronger password.';
     }
