@@ -3,6 +3,7 @@ import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class PasswordResetPopup extends ConsumerWidget {
   const PasswordResetPopup({super.key});
@@ -81,7 +82,7 @@ class PasswordResetPopup extends ConsumerWidget {
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(
+                    AppNavigation.smoothRoute(
                       builder: (context) => const HomeScreen(),
                     ),
                     (route) => false,

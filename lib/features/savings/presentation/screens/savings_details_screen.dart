@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
+import 'package:flutter/material.dart';
 
 class SavingsDetailsScreen extends StatefulWidget {
   final String savingsId;
   final String productName;
 
   const SavingsDetailsScreen({
-    Key? key,
+    super.key,
     required this.savingsId,
     required this.productName,
-  }) : super(key: key);
+  });
 
   @override
   State<SavingsDetailsScreen> createState() => _SavingsDetailsScreenState();
@@ -21,129 +21,111 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _transactionsFuture = _getSavingsTransactions();
+    _transactionsFuture = DatabaseHelper().getSavingTransactions(
+      savingsId: widget.savingsId,
+    );
   }
 
-  Future<List<Map<String, dynamic>>> _getSavingsTransactions() async {
-    final db = DatabaseHelper();
-    return await db.getSavingTransactions(savingsId: widget.savingsId);
+  String _stringValue(dynamic value) => value?.toString() ?? '';
+
+  double _doubleValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  dynamic _firstAvailable(Map<String, dynamic> row, List<String> keys) {
+    for (final key in keys) {
+      if (row.containsKey(key) && row[key] != null) return row[key];
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Drag handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    final topSafeArea = MediaQuery.paddingOf(context).top;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(12, topSafeArea + 22, 12, 16),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x19000000),
+                blurRadius: 18,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Color(0xFF0880C6),
+                      ),
+                    ),
+                  ],
                 ),
-                // Title
-                Text(
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
                   widget.productName,
-                  style: TextStyle(
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 24,
                     fontFamily: 'Proxima Nova',
                     fontWeight: FontWeight.w500,
-                    height: 1.42,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Table header
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0080C6).withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  child: Row(
-                    children: const [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Transaction\nDate',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Deposit\nAmount',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Withdraw\nAmount',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Balance',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildHeader(),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: Colors.black26,
                 ),
-                const Divider(height: 1, thickness: 0.5, color: Colors.black26),
-                FutureBuilder<List<Map<String, dynamic>>>(
+              ),
+              Expanded(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: _transactionsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: CircularProgressIndicator(),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                      return const Center(
                         child: Text(
                           'No transactions available',
                           style: TextStyle(color: Colors.grey),
@@ -151,141 +133,245 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                       );
                     }
 
-                    final txns = snapshot.data!;
-                    return Column(
-                      children: [
-                        ...txns.map((row) => Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        row['transaction_date'],
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF21409A),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        '${row['deposit_amount']} BDT',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF21409A),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        '${row['withdrawal_amount']} BDT',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF21409A),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Text(
-                                        '${row['balance']} BDT',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF0880C6),
-                                          fontSize: 12,
-                                          fontFamily: 'Proxima Nova',
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(
-                                    height: 18,
-                                    thickness: 0.5,
-                                    color: Colors.black12),
-                              ],
-                            )),
-                        const Divider(
-                            height: 24, thickness: 0.5, color: Colors.black26),
-                        Row(
-                          children: [
-                            const Expanded(
-                              flex: 3,
-                              child: Text(
-                                'Total',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                '${txns.fold(0.0, (sum, t) => sum + (t['deposit_amount'] ?? 0)).toStringAsFixed(0)} BDT',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                '${txns.fold(0.0, (sum, t) => sum + (t['withdrawal_amount'] ?? 0)).toStringAsFixed(0)} BDT',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                '${txns.last['balance']} BDT',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
+                    return _buildTransactionList(snapshot.data!);
                   },
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0080C6).withOpacity(0.10),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: const Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Transaction\nDate',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Deposit\nAmount',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Withdraw\nAmount',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Balance',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionList(List<Map<String, dynamic>> txns) {
+    final totalDeposit = txns.fold<double>(
+      0.0,
+      (sum, row) => sum + _doubleValue(_firstAvailable(row, ['deposit_amount'])),
+    );
+
+    final totalWithdraw = txns.fold<double>(
+      0.0,
+      (sum, row) => sum +
+          _doubleValue(_firstAvailable(row, ['withdrawal_amount', 'withdraw_amount'])),
+    );
+
+    final lastBalance = _doubleValue(
+      _firstAvailable(txns.last, ['balance', 'balance_after_tx']),
+    );
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      itemCount: txns.length + 1,
+      separatorBuilder: (_, __) => const Divider(
+        height: 18,
+        thickness: 0.5,
+        color: Colors.black12,
+      ),
+      itemBuilder: (context, index) {
+        if (index == txns.length) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _buildTotalRow(totalDeposit, totalWithdraw, lastBalance),
+          );
+        }
+
+        final row = txns[index];
+        final transactionDate = _stringValue(row['transaction_date']);
+        final depositAmount = _doubleValue(row['deposit_amount']);
+        final withdrawAmount = _doubleValue(
+          _firstAvailable(row, ['withdrawal_amount', 'withdraw_amount']),
+        );
+        final balance = _doubleValue(
+          _firstAvailable(row, ['balance', 'balance_after_tx']),
+        );
+
+        return Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Text(
+                transactionDate,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF21409A),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                '${depositAmount.toStringAsFixed(0)} BDT',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF21409A),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                '${withdrawAmount.toStringAsFixed(0)} BDT',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF21409A),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                '${balance.toStringAsFixed(0)} BDT',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF0880C6),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTotalRow(
+    double totalDeposit,
+    double totalWithdraw,
+    double lastBalance,
+  ) {
+    return Row(
+      children: [
+        const Expanded(
+          flex: 3,
+          child: Text(
+            'Total',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '${totalDeposit.toStringAsFixed(0)} BDT',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '${totalWithdraw.toStringAsFixed(0)} BDT',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '${lastBalance.toStringAsFixed(0)} BDT',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

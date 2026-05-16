@@ -14,7 +14,7 @@ class EmptyPortfolioState extends StatelessWidget {
   });
 
   static const String _emptyStateLottieUrl =
-      'https://assets7.lottiefiles.com/packages/lf20_7fCbvNSmFD.json';
+      'https://lottie.host/7eaea7b5-827f-498e-9006-0d7274b9a4f9/sQ7SJC8zki.json';
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +32,11 @@ class EmptyPortfolioState extends StatelessWidget {
                 repeat: true,
                 animate: true,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => _FallbackAnimation(icon: fallbackIcon),
+                errorBuilder: (_, __, ___) =>
+                    _FallbackAnimation(icon: fallbackIcon),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -46,7 +47,7 @@ class EmptyPortfolioState extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,

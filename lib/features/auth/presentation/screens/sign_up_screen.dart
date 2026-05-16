@@ -9,6 +9,7 @@ import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.d
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -48,7 +49,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
+          AppNavigation.smoothRoute(
             builder: (context) => OTPScreen(
               phone: phone,
               flow: OtpFlow.firstTimeSetup,
@@ -78,7 +79,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   void _goToSignIn() {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => const SignInScreen(phone: ''),
       ),
     );

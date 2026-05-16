@@ -151,6 +151,7 @@ class AuthService {
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyMemberName = 'memberName';
   static const String _keyMemberId = 'memberId';
+  static const String _keyMemberPhone = 'memberPhone';
   static const String _keyAccessToken = 'accessToken';
   static const String _keyLastUpdated = 'lastUpdated';
   static const String _keyAppVersion = 'appVersion';
@@ -165,6 +166,7 @@ class AuthService {
       await prefs.setBool(_keyIsLoggedIn, true);
       await prefs.setString(_keyMemberName, response.userData.name);
       await prefs.setString(_keyMemberId, response.userData.id);
+      await prefs.setString(_keyMemberPhone, response.userData.mobileNo);
       // Keep sensitive tokens in encrypted platform storage. A legacy
       // SharedPreferences value may exist from older builds and is cleaned on logout.
       await SecureSessionService.saveAccessToken(response.accessToken);
@@ -189,6 +191,57 @@ class AuthService {
   static Future<String> getMemberName() async {
     final prefs = await SharedPreferences.getInstance();
     return DisplayFormatters.firstName(prefs.getString(_keyMemberName));
+  }
+
+
+  static Future<String> getRememberedPhone() async {
+    final prefs = await SharedPreferences.getInstance();
+    final phone = prefs.getString(_keyMemberPhone) ?? '';
+    if (phone.trim().isNotEmpty) return phone.trim();
+
+    try {
+      final db = DatabaseHelper();
+      final loginResponse = await db.getLoginResponse();
+      final loginPhone = loginResponse?.userData.mobileNo.trim() ?? '';
+      if (loginPhone.isNotEmpty) return loginPhone;
+
+      final setPasswordResponse = await db.getLatestAuthApiResponse(
+        responseType: 'set_password',
+      );
+      final setPasswordPhone = _phoneFromAuthMap(setPasswordResponse);
+      if (setPasswordPhone.isNotEmpty) return setPasswordPhone;
+
+      final otpResponse = await db.getLatestAuthApiResponse(
+        responseType: 'otp_verification',
+      );
+      return _phoneFromAuthMap(otpResponse);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _phoneFromAuthMap(Map<String, dynamic>? data) {
+    if (data == null) return '';
+    final userData = data['user_data'];
+    if (userData is Map) {
+      final phone = userData['mobile_no']?.toString().trim() ?? '';
+      if (phone.isNotEmpty) return phone;
+    }
+
+    final memberDetails = data['memberDetails'];
+    if (memberDetails is List && memberDetails.isNotEmpty) {
+      final first = memberDetails.first;
+      if (first is Map) {
+        return first['mobile_no']?.toString().trim() ?? '';
+      }
+    }
+
+    return '';
+  }
+
+  static Future<bool> hasRememberedAccount() async {
+    final phone = await getRememberedPhone();
+    return phone.isNotEmpty;
   }
 
   static Future<String> getMemberId() async {
@@ -249,8 +302,17 @@ class AuthService {
 
   static Future<String> getKnownMemberNameByPhone(String phone) async {
     try {
-      final name = await DatabaseHelper().getKnownMemberNameByPhone(phone.trim());
-      return DisplayFormatters.firstName(name);
+      final cleanPhone = phone.trim();
+      final db = DatabaseHelper();
+      final name = await db.getKnownMemberNameByPhone(cleanPhone);
+      if (name.trim().isNotEmpty) return DisplayFormatters.firstName(name);
+
+      final loginResponse = await db.getLoginResponse();
+      if (loginResponse?.userData.mobileNo.trim() == cleanPhone) {
+        return DisplayFormatters.firstName(loginResponse?.userData.name);
+      }
+
+      return '';
     } catch (e) {
       print('Error getting known member name: $e');
       return '';

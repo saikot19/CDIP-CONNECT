@@ -19,6 +19,11 @@ class AppToast {
         backgroundColor: const Color(0xFF21409A),
       );
 
+
+  static void showComingSoon(String featureName) => showInfo(
+        '$featureName is coming soon. This feature will be available in a future update.',
+      );
+
   static void _show(
     String message, {
     required Color backgroundColor,

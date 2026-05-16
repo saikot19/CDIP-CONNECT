@@ -2,6 +2,7 @@ import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen
 import 'package:cdip_connect/features/profile/presentation/screens/my_profile_screen.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:flutter/material.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class BottomNavBar extends StatelessWidget {
   final bool isHome;
@@ -22,7 +23,7 @@ class BottomNavBar extends StatelessWidget {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => const HomeScreen(),
       ),
       (route) => false,
@@ -34,7 +35,7 @@ class BottomNavBar extends StatelessWidget {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) => const MyProfileScreen(),
       ),
     );

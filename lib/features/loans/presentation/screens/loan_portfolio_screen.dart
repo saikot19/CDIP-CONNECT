@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_details_screen.dart';
 import 'package:cdip_connect/features/savings/presentation/screens/savings_portfolio_screen.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class LoanPortfolioScreen extends ConsumerStatefulWidget {
   final AllSummary allSummary;
@@ -96,7 +97,7 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
   void switchToSavings() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      AppNavigation.smoothRoute(
         builder: (context) =>
             SavingsPortfolioScreen(allSummary: widget.allSummary),
       ),
@@ -278,7 +279,8 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
           ? () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                AppNavigation.smoothRoute(
+                  style: RouteTransitionStyle.modalSheet,
                   builder: (context) => LoanDetailsScreen(
                     loanId: loan.loanId,
                     productName: loan.loanProductName,

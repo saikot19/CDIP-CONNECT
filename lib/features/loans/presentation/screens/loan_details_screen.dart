@@ -1,16 +1,15 @@
-import 'package:flutter/material.dart';
-
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
+import 'package:flutter/material.dart';
 
 class LoanDetailsScreen extends StatefulWidget {
   final String loanId;
   final String productName;
 
   const LoanDetailsScreen({
-    Key? key,
+    super.key,
     required this.loanId,
     required this.productName,
-  }) : super(key: key);
+  });
 
   @override
   State<LoanDetailsScreen> createState() => _LoanDetailsScreenState();
@@ -22,18 +21,12 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _transactionsFuture = _getLoanTransactions();
+    _transactionsFuture = DatabaseHelper().getLoanTransactions(
+      loanId: widget.loanId,
+    );
   }
 
-  Future<List<Map<String, dynamic>>> _getLoanTransactions() async {
-    final db = DatabaseHelper();
-    return db.getLoanTransactions(loanId: widget.loanId);
-  }
-
-  String _stringValue(dynamic value) {
-    if (value == null) return '';
-    return value.toString();
-  }
+  String _stringValue(dynamic value) => value?.toString() ?? '';
 
   double _doubleValue(dynamic value) {
     if (value == null) return 0.0;
@@ -43,105 +36,89 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    final topSafeArea = MediaQuery.paddingOf(context).top;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(12, topSafeArea + 22, 12, 16),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x19000000),
+                blurRadius: 18,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Color(0xFF0880C6),
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
                   widget.productName,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 24,
                     fontFamily: 'Proxima Nova',
                     fontWeight: FontWeight.w500,
-                    height: 1.42,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0080C6).withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 8,
-                  ),
-                  child: const Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Transaction\nDate',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Transaction\nAmount',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: Text(
-                          'Loan Outstanding\nAmount',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildHeader(),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: Colors.black26,
                 ),
-                const Divider(height: 1, thickness: 0.5, color: Colors.black26),
-                FutureBuilder<List<Map<String, dynamic>>>(
+              ),
+              Expanded(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: _transactionsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: CircularProgressIndicator(),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
+                      return const Center(
                         child: Text(
                           'No transactions available',
                           style: TextStyle(color: Colors.grey),
@@ -149,138 +126,193 @@ class _LoanDetailsScreenState extends State<LoanDetailsScreen> {
                       );
                     }
 
-                    final txns = snapshot.data!;
-                    final totalAmount = txns.fold<double>(
-                      0.0,
-                      (sum, t) => sum + _doubleValue(t['transaction_amount']),
-                    );
-
-                    final lastOutstanding = _stringValue(
-                      txns.last['transaction_principal_amount'],
-                    );
-
-                    return Column(
-                      children: [
-                        ...txns.map((row) {
-                          final transactionDate =
-                              _stringValue(row['transaction_date']);
-                          final transactionAmount =
-                              _doubleValue(row['transaction_amount']);
-                          final outstandingAmount = _stringValue(
-                            row['transaction_principal_amount'],
-                          );
-
-                          return Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      transactionDate,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Color(0xFF21409A),
-                                        fontSize: 12,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      '${transactionAmount.toStringAsFixed(0)} BDT',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Color(0xFF21409A),
-                                        fontSize: 12,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 4,
-                                    child: Text(
-                                      '$outstandingAmount BDT',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Color(0xFF0880C6),
-                                        fontSize: 12,
-                                        fontFamily: 'Proxima Nova',
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(
-                                height: 18,
-                                thickness: 0.5,
-                                color: Colors.black12,
-                              ),
-                            ],
-                          );
-                        }),
-                        const Divider(
-                          height: 24,
-                          thickness: 0.5,
-                          color: Colors.black26,
-                        ),
-                        Row(
-                          children: [
-                            const Expanded(
-                              flex: 3,
-                              child: Text(
-                                'Total',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                '${totalAmount.toStringAsFixed(0)} BDT',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 4,
-                              child: Text(
-                                '$lastOutstanding BDT',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
+                    return _buildTransactionList(snapshot.data!);
                   },
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0080C6).withOpacity(0.10),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: const Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Transaction\nDate',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Transaction\nAmount',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              'Loan Outstanding\nAmount',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontFamily: 'Proxima Nova',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionList(List<Map<String, dynamic>> txns) {
+    final totalAmount = txns.fold<double>(
+      0.0,
+      (sum, t) => sum + _doubleValue(t['transaction_amount']),
+    );
+
+    final lastOutstanding = _stringValue(
+      txns.last['transaction_principal_amount'],
+    );
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      itemCount: txns.length + 1,
+      separatorBuilder: (_, __) => const Divider(
+        height: 18,
+        thickness: 0.5,
+        color: Colors.black12,
+      ),
+      itemBuilder: (context, index) {
+        if (index == txns.length) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _buildTotalRow(totalAmount, lastOutstanding),
+          );
+        }
+
+        final row = txns[index];
+        final transactionDate = _stringValue(row['transaction_date']);
+        final transactionAmount = _doubleValue(row['transaction_amount']);
+        final outstandingAmount = _stringValue(
+          row['transaction_principal_amount'],
+        );
+
+        return Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Text(
+                transactionDate,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF21409A),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                '${transactionAmount.toStringAsFixed(0)} BDT',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF21409A),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Text(
+                '$outstandingAmount BDT',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF0880C6),
+                  fontSize: 12,
+                  fontFamily: 'Proxima Nova',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTotalRow(double totalAmount, String lastOutstanding) {
+    return Row(
+      children: [
+        const Expanded(
+          flex: 3,
+          child: Text(
+            'Total',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '${totalAmount.toStringAsFixed(0)} BDT',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 4,
+          child: Text(
+            '$lastOutstanding BDT',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 12,
+              fontFamily: 'Proxima Nova',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

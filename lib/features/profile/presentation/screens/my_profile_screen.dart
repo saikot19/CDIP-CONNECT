@@ -8,6 +8,8 @@ import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -238,7 +240,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       if (_allSummary != null) {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          AppNavigation.smoothRoute(
                             builder: (context) =>
                                 LoanPortfolioScreen(allSummary: _allSummary!),
                           ),
@@ -251,7 +253,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                     text: t.changeLanguage,
                     onTap: () async {
                       final nextLanguage = language == 'bn' ? 'en' : 'bn';
-                      await ref.read(localizationProvider.notifier).changeLanguage(nextLanguage);
+                      await ref
+                          .read(localizationProvider.notifier)
+                          .changeLanguage(nextLanguage);
                       AppToast.showSuccess(
                         nextLanguage == 'bn'
                             ? 'বাংলা ভাষা নির্বাচন করা হয়েছে।'
@@ -262,40 +266,44 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   _buildProfileMenuRow(
                     icon: Icons.location_on_outlined,
                     text: t.manageAddress,
-                    onTap: () {},
+                    onTap: () => _showUnavailableFeature(t.manageAddress),
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.star_outline,
                     text: t.rateUs,
-                    onTap: () {},
+                    onTap: () => _showUnavailableFeature(t.rateUs),
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.info_outline,
                     text: t.aboutUs,
-                    onTap: () {},
+                    onTap: () => _showUnavailableFeature(t.aboutUs),
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.privacy_tip_outlined,
                     text: t.privacyPolicy,
-                    onTap: () {},
+                    onTap: () => _showUnavailableFeature(t.privacyPolicy),
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.description_outlined,
                     text: t.termsCondition,
-                    onTap: () {},
+                    onTap: () => _showUnavailableFeature(t.termsCondition),
                   ),
                   _buildProfileMenuRow(
                     icon: Icons.logout,
                     text: t.logout,
                     textColor: const Color(0xFFFF737B),
                     onTap: () async {
+                      final confirmed = await _showLogoutConfirmation();
+                      if (!confirmed) return;
+
                       await AuthService.logout();
+                      AppToast.showInfo('You have been logged out securely.');
+
                       if (!context.mounted) return;
-                      Navigator.pushAndRemoveUntil(
+                      AppNavigation.resetTo(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const SignUpScreen()),
-                        (route) => false,
+                        const SignUpScreen(),
+                        style: RouteTransitionStyle.fadeScale,
                       );
                     },
                   ),
@@ -313,6 +321,143 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         ),
       ),
     );
+  }
+
+  void _showUnavailableFeature(String featureName) {
+    AppToast.showComingSoon(featureName);
+  }
+
+  Future<bool> _showLogoutConfirmation() async {
+    final result = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Logout confirmation',
+      barrierColor: Colors.black.withOpacity(0.35),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(22, 22, 22, 8),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 110,
+                    child: Lottie.network(
+                      'https://assets2.lottiefiles.com/packages/lf20_jbrw3hcz.json',
+                      repeat: true,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 84,
+                          height: 84,
+                          decoration: const ShapeDecoration(
+                            color: Color(0xFFFFF2F2),
+                            shape: OvalBorder(),
+                          ),
+                          child: const Icon(
+                            Icons.logout,
+                            color: Color(0xFFFF737B),
+                            size: 42,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Are you sure you want to logout?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF1E1E1E),
+                      fontSize: 18,
+                      fontFamily: 'Proxima Nova',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'You will need to sign in again to access your account.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF6B6B6B),
+                      fontSize: 13,
+                      fontFamily: 'Proxima Nova',
+                      fontWeight: FontWeight.w400,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF0880C6)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Color(0xFF0880C6),
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 248, 9, 21),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Logout',
+                          style: TextStyle(
+                            fontFamily: 'Proxima Nova',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
   }
 
   Widget _buildProfileMenuRow({

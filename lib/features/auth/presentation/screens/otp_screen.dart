@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class OTPScreen extends ConsumerStatefulWidget {
   final String phone;
@@ -128,7 +129,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
           AppToast.showInfo('This account already has a password. Please sign in.');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
+            AppNavigation.smoothRoute(
               builder: (context) => SignInScreen(phone: widget.phone),
             ),
           );
@@ -137,7 +138,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
+          AppNavigation.smoothRoute(
             builder: (context) => SetPasswordScreen(
               phone: widget.phone,
               verifiedToken: verifiedToken,
@@ -147,7 +148,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
+          AppNavigation.smoothRoute(
             builder: (context) => ResetPasswordScreen(
               mode: ResetPasswordMode.updatePassword,
               initialPhone: widget.phone,

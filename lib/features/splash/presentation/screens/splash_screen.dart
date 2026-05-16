@@ -1,12 +1,9 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
-import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:cdip_connect/features/onboarding/presentation/screens/common_screen.dart';
-import 'package:cdip_connect/shared/models/login_response_model.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -20,86 +17,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _checkLoginStatus();
+      await _checkStartupRoute();
     });
   }
 
-  Future<void> _checkLoginStatus() async {
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> _checkStartupRoute() async {
+    await Future.delayed(const Duration(milliseconds: 1600));
 
     try {
-      final isLoggedIn = await AuthService.isLoggedIn();
+      final rememberedPhone = await AuthService.getRememberedPhone();
 
-      if (!isLoggedIn) {
-        if (!mounted) return;
-        Navigator.pushReplacement(
+      if (!mounted) return;
+
+      if (rememberedPhone.isNotEmpty) {
+        AppNavigation.replace(
           context,
-          CupertinoPageRoute(builder: (_) => const CommonScreen()),
-        );
-        return;
-      }
-
-      final LoginResponse? loginResponse = await AuthService.getLoginResponse();
-
-      final hasValidCache = loginResponse != null &&
-          loginResponse.status == 200 &&
-          loginResponse.userData.id.isNotEmpty;
-
-      if (hasValidCache) {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(builder: (_) => const HomeScreen()),
+          SignInScreen(phone: rememberedPhone),
         );
       } else {
-        await AuthService.logout();
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
+        AppNavigation.replace(
           context,
-          CupertinoPageRoute(builder: (_) => const CommonScreen()),
+          const CommonScreen(),
         );
       }
     } catch (e) {
-      print('Error in splash: $e');
-
+      debugPrint('Error in splash: $e');
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        CupertinoPageRoute(builder: (_) => const CommonScreen()),
-      );
+      AppNavigation.replace(context, const CommonScreen());
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final logoWidth = (size.width * 0.52).clamp(170.0, 230.0);
+    final logoHeight = logoWidth * 0.83;
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(color: Colors.white),
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Stack(
           children: [
-            const Positioned(
-              right: 20,
-              top: 32,
-              child: PreAuthBranding(
-                logoWidth: 52,
-                logoHeight: 42,
-                buttonWidth: 81,
-                buttonHeight: 39,
-              ),
-            ),
-            Positioned(
-              left: 101,
-              top: 372,
-              child: SizedBox(
-                width: 210,
-                height: 173.94,
-                child: Image.asset(
-                  'assets/logo/App Splash Screen-8.png',
-                  fit: BoxFit.contain,
+            Center(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.92, end: 1.0),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value.clamp(0.0, 1.0),
+                    child: Transform.scale(
+                      scale: value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: logoWidth,
+                  height: logoHeight,
+                  child: Image.asset(
+                    'assets/logo/App Splash Screen-8.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
