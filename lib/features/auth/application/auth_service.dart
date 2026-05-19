@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cdip_connect/core/services/secure_session_service.dart';
-import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/features/auth/data/services/api_service.dart';
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
@@ -151,6 +150,7 @@ class AuthService {
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyMemberName = 'memberName';
   static const String _keyMemberId = 'memberId';
+  static const String _keyMemberCode = 'memberCode';
   static const String _keyMemberPhone = 'memberPhone';
   static const String _keyAccessToken = 'accessToken';
   static const String _keyLastUpdated = 'lastUpdated';
@@ -166,6 +166,7 @@ class AuthService {
       await prefs.setBool(_keyIsLoggedIn, true);
       await prefs.setString(_keyMemberName, response.userData.name);
       await prefs.setString(_keyMemberId, response.userData.id);
+      await prefs.setString(_keyMemberCode, response.userData.code);
       await prefs.setString(_keyMemberPhone, response.userData.mobileNo);
       // Keep sensitive tokens in encrypted platform storage. A legacy
       // SharedPreferences value may exist from older builds and is cleaned on logout.
@@ -190,7 +191,11 @@ class AuthService {
 
   static Future<String> getMemberName() async {
     final prefs = await SharedPreferences.getInstance();
-    return DisplayFormatters.firstName(prefs.getString(_keyMemberName));
+    final cachedName = prefs.getString(_keyMemberName)?.trim() ?? '';
+    if (cachedName.isNotEmpty) return cachedName;
+
+    final loginResponse = await getLoginResponse();
+    return loginResponse?.userData.name.trim() ?? '';
   }
 
 
@@ -246,6 +251,18 @@ class AuthService {
 
   static Future<String> getMemberId() async {
     final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyMemberId) ?? '';
+  }
+
+  static Future<String> getMemberCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedCode = prefs.getString(_keyMemberCode)?.trim() ?? '';
+    if (cachedCode.isNotEmpty) return cachedCode;
+
+    final loginResponse = await getLoginResponse();
+    final code = loginResponse?.userData.code.trim() ?? '';
+    if (code.isNotEmpty) return code;
+
     return prefs.getString(_keyMemberId) ?? '';
   }
 
@@ -305,11 +322,11 @@ class AuthService {
       final cleanPhone = phone.trim();
       final db = DatabaseHelper();
       final name = await db.getKnownMemberNameByPhone(cleanPhone);
-      if (name.trim().isNotEmpty) return DisplayFormatters.firstName(name);
+      if (name.trim().isNotEmpty) return name.trim();
 
       final loginResponse = await db.getLoginResponse();
       if (loginResponse?.userData.mobileNo.trim() == cleanPhone) {
-        return DisplayFormatters.firstName(loginResponse?.userData.name);
+        return loginResponse?.userData.name.trim() ?? '';
       }
 
       return '';

@@ -99,14 +99,22 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  fonts:
-     - family: Proxima Nova
-       fonts:
-        - asset: assets/fonts/ProximaNova-Regular.ttf
-        - asset: assets/fonts/ProximaNova-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/ProximaNova-Semibold.ttf
-          weight: 600
+fonts:
+  - family: Proxima Nova
+    fonts:
+      - asset: assets/fonts/ProximaNova-Regular.ttf
+      - asset: assets/fonts/ProximaNova-Bold.ttf
+        weight: 700
+      - asset: assets/fonts/ProximaNova-Semibold.ttf
+        weight: 600
+
+  - family: Anek Bangla
+    fonts:
+      - asset: assets/fonts/AnekBangla-Regular.ttf
+      - asset: assets/fonts/AnekBangla-SemiBold.ttf
+        weight: 600
+      - asset: assets/fonts/AnekBangla-Bold.ttf
+        weight: 700
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

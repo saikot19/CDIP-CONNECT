@@ -43,8 +43,7 @@ class EmptyPortfolioState extends StatelessWidget {
               style: const TextStyle(
                 color: Color(0xFF1E1E1E),
                 fontSize: 18,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
@@ -54,8 +53,7 @@ class EmptyPortfolioState extends StatelessWidget {
               style: TextStyle(
                 color: Colors.black.withOpacity(0.55),
                 fontSize: 13,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
+                                fontWeight: FontWeight.w400,
                 height: 1.35,
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_flow.dart';
@@ -7,7 +8,9 @@ import 'package:cdip_connect/features/auth/data/services/api_service.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/otp_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 
@@ -85,12 +88,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     );
   }
 
+  Future<void> _handleBack() async {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final shouldExit = await AppFeedback.confirmExit(context);
+    if (shouldExit) {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
-    return Scaffold(
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        await _handleBack();
+        return false;
+      },
+      child: Scaffold(
+        body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -106,10 +126,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                            ),
+                            AppBackButton(onTap: _handleBack),
                             const PreAuthBranding(
                               logoWidth: 58,
                               logoHeight: 46,
@@ -124,8 +141,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 30,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w500,
+                                                        fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -134,8 +150,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 14,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
+                                                        fontWeight: FontWeight.w400,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -167,8 +182,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   style: const TextStyle(
                                     color: Color(0xFF3A3A3A),
                                     fontSize: 16,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w400,
+                                                                        fontWeight: FontWeight.w400,
                                   ),
                                   onChanged: (_) => _clearError(),
                                 ),
@@ -202,8 +216,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     t.signUp,
                                     style: const TextStyle(
                                       fontSize: 16,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w600,
+                                                                            fontWeight: FontWeight.w600,
                                     ),
                                   ),
                           ),
@@ -218,8 +231,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 style: const TextStyle(
                                   color: Color(0xFF3A3A3A),
                                   fontSize: 12,
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w400,
+                                                                    fontWeight: FontWeight.w400,
                                 ),
                               ),
                               GestureDetector(
@@ -229,8 +241,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   style: const TextStyle(
                                     color: Color(0xFF0080C6),
                                     fontSize: 12,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w700,
+                                                                        fontWeight: FontWeight.w700,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -248,8 +259,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   style: const TextStyle(
                                     color: Color(0xFF3A3A3A),
                                     fontSize: 12,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w400,
+                                                                        fontWeight: FontWeight.w400,
                                   ),
                                 ),
                                 const TextSpan(
@@ -257,8 +267,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   style: TextStyle(
                                     color: Color(0xFF0278C0),
                                     fontSize: 12,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w700,
+                                                                        fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -275,6 +284,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           },
         ),
       ),
+    ),
     );
   }
 

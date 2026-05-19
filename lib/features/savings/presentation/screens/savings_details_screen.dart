@@ -1,7 +1,10 @@
+import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_formatters.dart';
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SavingsDetailsScreen extends StatefulWidget {
+class SavingsDetailsScreen extends ConsumerStatefulWidget {
   final String savingsId;
   final String productName;
 
@@ -12,18 +15,16 @@ class SavingsDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<SavingsDetailsScreen> createState() => _SavingsDetailsScreenState();
+  ConsumerState<SavingsDetailsScreen> createState() => _SavingsDetailsScreenState();
 }
 
-class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
+class _SavingsDetailsScreenState extends ConsumerState<SavingsDetailsScreen> {
   late Future<List<Map<String, dynamic>>> _transactionsFuture;
 
   @override
   void initState() {
     super.initState();
-    _transactionsFuture = DatabaseHelper().getSavingTransactions(
-      savingsId: widget.savingsId,
-    );
+    _transactionsFuture = DatabaseHelper().getSavingTransactions(savingsId: widget.savingsId);
   }
 
   String _stringValue(dynamic value) => value?.toString() ?? '';
@@ -43,12 +44,13 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations(ref.watch(localizationProvider));
     final topSafeArea = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       body: Padding(
-        padding: EdgeInsets.fromLTRB(12, topSafeArea + 22, 12, 16),
+        padding: EdgeInsets.fromLTRB(12, topSafeArea + 28, 12, 16),
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -62,59 +64,35 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
             ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.close,
-                        color: Color(0xFF0880C6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildTopHandle(context),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  widget.productName,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w500,
-                    height: 1.25,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    t.savingPortfolioDetails,
+                    textAlign: TextAlign.left,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildHeader(),
+                child: _buildHeader(t),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Colors.black26,
-                ),
+                child: Divider(height: 1, thickness: 0.5, color: Colors.black26),
               ),
               Expanded(
                 child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -123,17 +101,15 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
-
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'No transactions available',
-                          style: TextStyle(color: Colors.grey),
+                          t.noTransactionsAvailable,
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       );
                     }
-
-                    return _buildTransactionList(snapshot.data!);
+                    return _buildTransactionList(snapshot.data!, t);
                   },
                 ),
               ),
@@ -144,24 +120,47 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildTopHandle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      child: Row(
+        children: [
+          const Spacer(),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close, color: Color(0xFF0880C6)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(AppLocalizations t) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0080C6).withOpacity(0.10),
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: const Row(
+      child: Row(
         children: [
           Expanded(
             flex: 3,
             child: Text(
-              'Transaction\nDate',
+              t.transactionDate,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.black,
                 fontSize: 12,
-                fontFamily: 'Proxima Nova',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -169,12 +168,11 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
           Expanded(
             flex: 3,
             child: Text(
-              'Deposit\nAmount',
+              t.depositAmount,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.black,
                 fontSize: 12,
-                fontFamily: 'Proxima Nova',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -182,25 +180,11 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
           Expanded(
             flex: 3,
             child: Text(
-              'Withdraw\nAmount',
+              t.withdrawAmount,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.black,
                 fontSize: 12,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              'Balance',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 12,
-                fontFamily: 'Proxima Nova',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -210,22 +194,7 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
     );
   }
 
-  Widget _buildTransactionList(List<Map<String, dynamic>> txns) {
-    final totalDeposit = txns.fold<double>(
-      0.0,
-      (sum, row) => sum + _doubleValue(_firstAvailable(row, ['deposit_amount'])),
-    );
-
-    final totalWithdraw = txns.fold<double>(
-      0.0,
-      (sum, row) => sum +
-          _doubleValue(_firstAvailable(row, ['withdrawal_amount', 'withdraw_amount'])),
-    );
-
-    final lastBalance = _doubleValue(
-      _firstAvailable(txns.last, ['balance', 'balance_after_tx']),
-    );
-
+  Widget _buildTransactionList(List<Map<String, dynamic>> txns, AppLocalizations t) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       itemCount: txns.length + 1,
@@ -236,33 +205,24 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
       ),
       itemBuilder: (context, index) {
         if (index == txns.length) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: _buildTotalRow(totalDeposit, totalWithdraw, lastBalance),
-          );
+          return _TransactionSummary(text: t.transactionCountNote(txns.length));
         }
 
         final row = txns[index];
         final transactionDate = _stringValue(row['transaction_date']);
-        final depositAmount = _doubleValue(row['deposit_amount']);
-        final withdrawAmount = _doubleValue(
-          _firstAvailable(row, ['withdrawal_amount', 'withdraw_amount']),
-        );
-        final balance = _doubleValue(
-          _firstAvailable(row, ['balance', 'balance_after_tx']),
-        );
+        final depositAmount = _doubleValue(_firstAvailable(row, ['deposit_amount']));
+        final withdrawAmount = _doubleValue(_firstAvailable(row, ['withdrawal_amount', 'withdraw_amount']));
 
         return Row(
           children: [
             Expanded(
               flex: 3,
               child: Text(
-                transactionDate,
+                AppFormatters.date(transactionDate),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF21409A),
                   fontSize: 12,
-                  fontFamily: 'Proxima Nova',
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -270,12 +230,11 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
             Expanded(
               flex: 3,
               child: Text(
-                '${depositAmount.toStringAsFixed(0)} BDT',
+                AppFormatters.amount(depositAmount, suffix: t.bdt),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF21409A),
                   fontSize: 12,
-                  fontFamily: 'Proxima Nova',
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -283,26 +242,12 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
             Expanded(
               flex: 3,
               child: Text(
-                '${withdrawAmount.toStringAsFixed(0)} BDT',
+                AppFormatters.amount(withdrawAmount, suffix: t.bdt),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF21409A),
                   fontSize: 12,
-                  fontFamily: 'Proxima Nova',
                   fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 3,
-              child: Text(
-                '${balance.toStringAsFixed(0)} BDT',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF0880C6),
-                  fontSize: 12,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -311,67 +256,30 @@ class _SavingsDetailsScreenState extends State<SavingsDetailsScreen> {
       },
     );
   }
+}
 
-  Widget _buildTotalRow(
-    double totalDeposit,
-    double totalWithdraw,
-    double lastBalance,
-  ) {
-    return Row(
-      children: [
-        const Expanded(
-          flex: 3,
-          child: Text(
-            'Total',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-            ),
+class _TransactionSummary extends StatelessWidget {
+  final String text;
+
+  const _TransactionSummary({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          textAlign: TextAlign.left,
+          style: const TextStyle(
+            color: Color(0xFF6B7280),
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 1.35,
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            '${totalDeposit.toStringAsFixed(0)} BDT',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            '${totalWithdraw.toStringAsFixed(0)} BDT',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            '${lastBalance.toStringAsFixed(0)} BDT',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              fontFamily: 'Proxima Nova',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

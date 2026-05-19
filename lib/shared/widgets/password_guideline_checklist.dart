@@ -105,8 +105,7 @@ class _RuleRow extends StatelessWidget {
               style: TextStyle(
                 color: passed ? const Color(0xFF0880C6) : const Color(0xFF64748B),
                 fontSize: 12,
-                fontFamily: 'Proxima Nova',
-                fontWeight: passed ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: passed ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),

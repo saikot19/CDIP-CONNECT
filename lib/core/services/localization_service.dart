@@ -1,6 +1,7 @@
 // lib/core/services/localization_service.dart
+import 'package:cdip_connect/core/utils/app_formatters.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final localizationProvider =
     StateNotifierProvider<LocalizationNotifier, String>((ref) {
@@ -8,22 +9,29 @@ final localizationProvider =
 });
 
 class LocalizationNotifier extends StateNotifier<String> {
-  final _storage = const FlutterSecureStorage();
+  static const String _languageKey = 'language';
+  static const String _legacyLanguageKey = 'language_code';
 
   LocalizationNotifier() : super('en') {
     _loadLanguage();
   }
 
   Future<void> _loadLanguage() async {
-    final lang = await _storage.read(key: 'language');
-    if (lang != null) {
+    final prefs = await SharedPreferences.getInstance();
+    final lang = prefs.getString(_languageKey) ??
+        prefs.getString(_legacyLanguageKey) ??
+        'en';
+    if (lang == 'bn' || lang == 'en') {
       state = lang;
     }
   }
 
   Future<void> changeLanguage(String lang) async {
-    state = lang;
-    await _storage.write(key: 'language', value: lang);
+    final normalized = lang == 'bn' ? 'bn' : 'en';
+    state = normalized;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageKey, normalized);
+    await prefs.setString(_legacyLanguageKey, normalized);
   }
 
   bool get isBangla => state == 'bn';
@@ -97,6 +105,13 @@ class AppLocalizations {
       'opening_date': 'Opening Date',
       'recovered': 'Recovered',
       'total_savings_amount': 'Total Savings Amount',
+      'loan_portfolio_details': 'Loan Portfolio Details',
+      'saving_portfolio_details': 'Saving Portfolio Details',
+      'transaction_date': 'Transaction\nDate',
+      'transaction_amount': 'Transaction\nAmount',
+      'deposit_amount': 'Deposit\nAmount',
+      'withdraw_amount': 'Withdraw\nAmount',
+      'no_transactions_available': 'No transactions available',
 
       // Profile
       'my_profile': 'My Profile',
@@ -104,6 +119,7 @@ class AppLocalizations {
       'branch_name': 'Branch Name',
       'my_portfolio': 'My Portfolio',
       'change_language': 'Change Language',
+      'application_history': 'Application History',
       'manage_address': 'Manage Address',
       'rate_us': 'Rate Us',
       'share_app': 'Share App',
@@ -193,6 +209,13 @@ class AppLocalizations {
       'opening_date': 'খোলার তারিখ',
       'recovered': 'পুনরুদ্ধার',
       'total_savings_amount': 'মোট সঞ্চয় পরিমাণ',
+      'loan_portfolio_details': 'ঋণ পোর্টফোলিও বিস্তারিত',
+      'saving_portfolio_details': 'সঞ্চয় পোর্টফোলিও বিস্তারিত',
+      'transaction_date': 'লেনদেনের\nতারিখ',
+      'transaction_amount': 'লেনদেনের\nপরিমাণ',
+      'deposit_amount': 'জমার\nপরিমাণ',
+      'withdraw_amount': 'উত্তোলনের\nপরিমাণ',
+      'no_transactions_available': 'কোনো লেনদেন নেই',
 
       // Profile
       'my_profile': 'আমার প্রোফাইল',
@@ -200,6 +223,7 @@ class AppLocalizations {
       'branch_name': 'শাখার নাম',
       'my_portfolio': 'আমার পোর্টফোলিও',
       'change_language': 'ভাষা পরিবর্তন করুন',
+      'application_history': 'আবেদন ইতিহাস',
       'manage_address': 'ঠিকানা পরিচালনা',
       'rate_us': 'আমাদের রেট করুন',
       'share_app': 'অ্যাপ শেয়ার করুন',
@@ -302,6 +326,13 @@ class AppLocalizations {
   String get openingDate => translate('opening_date');
   String get recovered => translate('recovered');
   String get totalSavingsAmount => translate('total_savings_amount');
+  String get loanPortfolioDetails => translate('loan_portfolio_details');
+  String get savingPortfolioDetails => translate('saving_portfolio_details');
+  String get transactionDate => translate('transaction_date');
+  String get transactionAmount => translate('transaction_amount');
+  String get depositAmount => translate('deposit_amount');
+  String get withdrawAmount => translate('withdraw_amount');
+  String get noTransactionsAvailable => translate('no_transactions_available');
 
   // Profile
   String get myProfile => translate('my_profile');
@@ -309,6 +340,7 @@ class AppLocalizations {
   String get branchName => translate('branch_name');
   String get myPortfolio => translate('my_portfolio');
   String get changeLanguage => translate('change_language');
+  String get applicationHistory => translate('application_history');
   String get manageAddress => translate('manage_address');
   String get rateUs => translate('rate_us');
   String get shareApp => translate('share_app');
@@ -318,4 +350,16 @@ class AppLocalizations {
   String get logout => translate('logout');
 
   String get bdt => translate('bdt');
+  String get fontFamily => locale == 'bn' ? 'Anek Bangla' : 'Proxima Nova';
+
+  String digits(dynamic value) => AppFormatters.digits(value);
+
+  String transactionCountNote(int count) {
+    if (locale == 'bn') {
+      return 'শেষ ${AppFormatters.digits(count)}টি লেনদেন দেখানো হচ্ছে।';
+    }
+    final noun = count == 1 ? 'transaction is' : 'transactions are';
+    return 'Last ${AppFormatters.digits(count)} $noun showing.';
+  }
 }
+

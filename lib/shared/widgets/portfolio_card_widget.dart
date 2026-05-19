@@ -92,8 +92,7 @@ class PortfolioCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Color(0xFF21409A),
                           fontSize: 14,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w700,
                           height: 1,
                         ),
                       ),
@@ -106,8 +105,7 @@ class PortfolioCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 12,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
+                                                        fontWeight: FontWeight.w700,
                             height: 1.25,
                           ),
                         ),
@@ -131,8 +129,7 @@ class PortfolioCard extends StatelessWidget {
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 10,
-                                fontFamily: 'Proxima Nova',
-                                fontWeight: FontWeight.w400,
+                                                                fontWeight: FontWeight.w400,
                                 height: 1,
                               ),
                             ),
@@ -146,8 +143,7 @@ class PortfolioCard extends StatelessWidget {
                             style: const TextStyle(
                               color: Color(0xFF3A3A3A),
                               fontSize: 14,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w400,
+                                                            fontWeight: FontWeight.w400,
                               height: 1,
                             ),
                           ),
@@ -168,8 +164,7 @@ class PortfolioCard extends StatelessWidget {
                           style: TextStyle(
                             color: Color(0xFF0080C6),
                             fontSize: 14,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w700,
+                                                        fontWeight: FontWeight.w700,
                             height: 1,
                           ),
                         ),
@@ -184,8 +179,7 @@ class PortfolioCard extends StatelessWidget {
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 12,
-                                fontFamily: 'Proxima Nova',
-                                fontWeight: FontWeight.w700,
+                                                                fontWeight: FontWeight.w700,
                                 height: 1.17,
                               ),
                             ),
@@ -222,8 +216,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: const TextStyle(
                                       color: Colors.black,
                                       fontSize: 10,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w400,
+                                                                            fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),
@@ -237,8 +230,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: TextStyle(
                                       color: _getAmountColor(amountLabel!),
                                       fontSize: 14,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w600,
+                                                                            fontWeight: FontWeight.w600,
                                       height: 1,
                                     ),
                                   ),
@@ -265,8 +257,7 @@ class PortfolioCard extends StatelessWidget {
                                   style: const TextStyle(
                                     color: Colors.black,
                                     fontSize: 10,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w400,
+                                                                        fontWeight: FontWeight.w400,
                                     height: 1,
                                   ),
                                 ),
@@ -280,8 +271,7 @@ class PortfolioCard extends StatelessWidget {
                                   style: TextStyle(
                                     color: _getAmountColor(secondAmountLabel!),
                                     fontSize: 14,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w400,
+                                                                        fontWeight: FontWeight.w400,
                                     height: 1,
                                   ),
                                 ),
@@ -302,8 +292,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: 10,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w400,
+                                                                            fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),
@@ -318,8 +307,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: const TextStyle(
                                       color: Color(0xFFFF0000),
                                       fontSize: 14,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w400,
+                                                                            fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),

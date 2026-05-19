@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:cdip_connect/core/utils/app_formatters.dart';
 
 class DisplayFormatters {
   const DisplayFormatters._();
@@ -17,6 +18,6 @@ class DisplayFormatters {
     final dateTime = DateTime.tryParse(normalized);
     if (dateTime == null) return raw;
 
-    return DateFormat('d MMM y, h:mm a').format(dateTime);
+    return AppFormatters.digits(DateFormat('d MMM y, h:mm a').format(dateTime));
   }
 }

@@ -52,8 +52,7 @@ class PasswordResetPopup extends ConsumerWidget {
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 20,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                   height: 1.70,
                 ),
               ),
@@ -68,8 +67,7 @@ class PasswordResetPopup extends ConsumerWidget {
                 style: const TextStyle(
                   color: Color(0xFF3A3A3A),
                   fontSize: 14,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                   height: 1.25,
                 ),
               ),
@@ -115,8 +113,7 @@ class PasswordResetPopup extends ConsumerWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

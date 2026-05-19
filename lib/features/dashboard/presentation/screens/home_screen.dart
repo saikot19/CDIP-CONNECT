@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cdip_connect/core/services/localization_service.dart';
-import 'package:cdip_connect/core/utils/display_formatters.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:cdip_connect/core/utils/app_formatters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
@@ -101,14 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _formatAmount(dynamic value) {
-    if (value == null) return '0';
-
-    try {
-      final number = double.parse(value.toString());
-      return NumberFormat.decimalPattern('en_IN').format(number.round());
-    } catch (_) {
-      return value.toString();
-    }
+    return AppFormatters.rawNumber(value);
   }
 
   void _openLoanPortfolio(AllSummary summary) {
@@ -191,15 +183,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         Positioned(
                           left: x(20),
-                          top: y(50),
-                          width: w(32),
-                          height: h(32),
-                          child: CircleAvatar(
-                            backgroundColor: Colors.grey[300],
+                          top: y(45),
+                          width: w(48),
+                          height: h(48),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.16),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.2),
+                            ),
                             child: Icon(
-                              Icons.person,
-                              color: Colors.grey,
-                              size: f(22),
+                              Icons.person_outline_rounded,
+                              color: Colors.white,
+                              size: f(28),
                             ),
                           ),
                         ),
@@ -270,8 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: f(16),
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w400,
+                                                            fontWeight: FontWeight.w400,
                               height: 1,
                             ),
                           ),
@@ -279,21 +274,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Positioned(
                           left: x(20),
                           top: y(129),
-                          width: w(280),
+                          width: w(360),
                           child: FutureBuilder<String>(
                             future: _memberNameFuture,
                             builder: (context, snapshot) {
                               return Text(
-                                snapshot.data?.isNotEmpty == true
-                                    ? DisplayFormatters.firstName(snapshot.data, fallback: 'Member')
+                                snapshot.data?.trim().isNotEmpty == true
+                                    ? snapshot.data!.trim()
                                     : 'Member',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: f(24),
-                                  fontFamily: 'Proxima Nova',
-                                  fontWeight: FontWeight.w700,
+                                                                    fontWeight: FontWeight.w700,
                                   height: 0.83,
                                 ),
                               );
@@ -329,8 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: TextStyle(
                               color: const Color(0xFF1E1E1E),
                               fontSize: f(16),
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w700,
+                                                            fontWeight: FontWeight.w700,
                               height: 2.13,
                             ),
                           ),
@@ -386,7 +379,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     amount:
                                         '${_formatAmount(summary.loanOutstanding)} ${t.bdt}',
                                     countLabel: t.noOfLoans,
-                                    count: summary.loanCount.toString(),
+                                    count: t.digits(summary.loanCount),
                                     onTap: () => _openLoanPortfolio(allSummary),
                                   ),
                                   _buildSummaryCard(
@@ -401,7 +394,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     amount:
                                         '${_formatAmount(summary.savingsOutstanding)} ${t.bdt}',
                                     countLabel: t.noOfSavings,
-                                    count: summary.savingsCount.toString(),
+                                    count: t.digits(summary.savingsCount),
                                     onTap: () =>
                                         _openSavingsPortfolio(allSummary),
                                   ),
@@ -418,7 +411,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     amount:
                                         '${_formatAmount(summary.dueLoanAmount)} ${t.bdt}',
                                     countLabel: t.noOfDueLoans,
-                                    count: summary.dueLoanCount.toString(),
+                                    count: t.digits(summary.dueLoanCount),
                                   ),
                                 ],
                               );
@@ -433,8 +426,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: TextStyle(
                               color: const Color(0xFF1E1E1E),
                               fontSize: f(16),
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w700,
+                                                            fontWeight: FontWeight.w700,
                               height: 2.13,
                             ),
                           ),
@@ -565,8 +557,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: f(14),
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -582,8 +573,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: f(title == 'Total Due Amount' ? 25 : 23),
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                     height: title == 'Total Due Amount' ? 1 : 1.09,
                   ),
                 ),
@@ -600,8 +590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: f(12),
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                     height: 1.17,
                   ),
                 ),
@@ -616,8 +605,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: f(23),
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                     height: 1.09,
                   ),
                 ),
@@ -686,8 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: TextStyle(
                 color: Colors.black,
                 fontSize: f(14),
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                 height: 1,
               ),
             ),

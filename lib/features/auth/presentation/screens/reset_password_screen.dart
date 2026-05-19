@@ -9,6 +9,7 @@ import 'package:cdip_connect/features/auth/presentation/screens/password_reset_p
 import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
 import 'package:cdip_connect/shared/widgets/password_guideline_checklist.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
@@ -203,119 +204,99 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(color: Colors.white),
-        child: Stack(
-          children: [
-            const Positioned(
-              right: 20,
-              top: 32,
-              child: PreAuthBranding(
-                logoWidth: 52,
-                logoHeight: 42,
-                buttonWidth: 81,
-                buttonHeight: 39,
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 53,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const SizedBox(
-                  width: 35,
-                  height: 35,
-                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 111,
-              child: Text(
-                t.resetPassword,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 30,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1.13,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 201,
-              child: Container(
-                width: 372,
-                height: 48,
-                decoration: ShapeDecoration(
-                  shape: RoundedRectangleBorder(
-                    side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                child: TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 11,
-                  onChanged: (_) => _clearError(),
-                  decoration: const InputDecoration(
-                    hintText: '01XXXXXXXXX',
-                    counterText: '',
-                    border: InputBorder.none,
-                    contentPadding:
-                        EdgeInsets.only(left: 20, right: 12, bottom: 2),
-                  ),
-                  style: const TextStyle(
-                    color: Color(0xFF3A3A3A),
-                    fontSize: 16,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 179,
-              child: Text(
-                t.phoneNumberLabel,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 10,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            if (_errorText != null)
-              Positioned(
-                left: 20,
-                top: 258,
-                child: SizedBox(
-                  width: 372,
-                  child: Text(
-                    _errorText!,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppBackButton(onTap: () => Navigator.pop(context)),
+                              const PreAuthBranding(
+                                logoWidth: 52,
+                                logoHeight: 42,
+                                buttonWidth: 81,
+                                buttonHeight: 39,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            t.resetPassword,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 30,
+                                                            fontWeight: FontWeight.w500,
+                              height: 1.13,
+                            ),
+                          ),
+                          const SizedBox(height: 34),
+                          Text(
+                            t.phoneNumberLabel,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                                                            fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 48,
+                            decoration: ShapeDecoration(
+                              shape: RoundedRectangleBorder(
+                                side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 11,
+                              onChanged: (_) => _clearError(),
+                              decoration: const InputDecoration(
+                                hintText: '01XXXXXXXXX',
+                                counterText: '',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.only(left: 20, right: 12, bottom: 2),
+                              ),
+                              style: const TextStyle(
+                                color: Color(0xFF3A3A3A),
+                                fontSize: 16,
+                                                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (_errorText != null) ...[
+                            const SizedBox(height: 10),
+                            Text(_errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                          ],
+                          const SizedBox(height: 34),
+                          GestureDetector(
+                            onTap: _isLoading ? null : _sendOtp,
+                            child: _GradientButton(label: t.sendOtp, isLoading: _isLoading),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            Positioned(
-              left: 20,
-              top: 315,
-              child: GestureDetector(
-                onTap: _isLoading ? null : _sendOtp,
-                child: _GradientButton(
-                  label: t.sendOtp,
-                  isLoading: _isLoading,
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -332,7 +313,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             return SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
+                child: Align(
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 430),
                     child: Padding(
@@ -344,14 +326,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: const SizedBox(
-                                  width: 35,
-                                  height: 35,
-                                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                                ),
-                              ),
+                              AppBackButton(onTap: () => Navigator.pop(context)),
                               const PreAuthBranding(
                                 logoWidth: 52,
                                 logoHeight: 42,
@@ -366,8 +341,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 30,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w500,
+                                                            fontWeight: FontWeight.w500,
                               height: 1.13,
                             ),
                           ),
@@ -466,8 +440,7 @@ class _InlinePasswordField extends StatelessWidget {
           style: const TextStyle(
             color: Colors.black,
             fontSize: 10,
-            fontFamily: 'Proxima Nova',
-            fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w400,
           ),
         ),
         const SizedBox(height: 8),
@@ -494,8 +467,7 @@ class _InlinePasswordField extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF3A3A3A),
                     fontSize: 16,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -574,8 +546,7 @@ class _PasswordField extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF3A3A3A),
                         fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -601,8 +572,7 @@ class _PasswordField extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 10,
-                fontFamily: 'Proxima Nova',
-                fontWeight: FontWeight.w400,
+                                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -624,7 +594,7 @@ class _GradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 372,
+      width: double.infinity,
       height: 49,
       decoration: ShapeDecoration(
         gradient: LinearGradient(
@@ -662,8 +632,7 @@ class _GradientButton extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                 ),
               ),
       ),

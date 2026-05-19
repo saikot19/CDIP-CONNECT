@@ -4,6 +4,7 @@ import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.d
 import 'package:cdip_connect/features/onboarding/presentation/screens/common_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -22,7 +23,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _checkStartupRoute() async {
-    await Future.delayed(const Duration(milliseconds: 1600));
+    await Future.delayed(const Duration(milliseconds: 3800));
 
     try {
       final rememberedPhone = await AuthService.getRememberedPhone();
@@ -75,9 +76,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 child: SizedBox(
                   width: logoWidth,
                   height: logoHeight,
-                  child: Image.asset(
-                    'assets/logo/App Splash Screen-8.png',
+                  child: Lottie.network(
+                    'https://lottie.host/1f9dffdc-4151-4641-bf91-ea0663254005/GaUM85vBxQ.json',
+                    repeat: false,
+                    animate: true,
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        'assets/logo/App Splash Screen-8.png',
+                        fit: BoxFit.contain,
+                      );
+                    },
                   ),
                 ),
               ),

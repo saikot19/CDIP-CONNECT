@@ -1,4 +1,5 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_flow.dart';
@@ -7,11 +8,11 @@ import 'package:cdip_connect/features/auth/data/services/api_service.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/set_password_screen.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class OTPScreen extends ConsumerStatefulWidget {
   final String phone;
@@ -32,8 +33,8 @@ class OTPScreen extends ConsumerStatefulWidget {
 class _OTPScreenState extends ConsumerState<OTPScreen> {
   final TextEditingController _otpController = TextEditingController();
   final List<TextEditingController> _otpControllers =
-      List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   String? _errorText;
   bool _isVerifying = false;
@@ -48,12 +49,10 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(otpTimerProvider.notifier).startTimer();
-
       if (widget.testOtp.isNotEmpty) {
-        final digits = widget.testOtp.split('');
+        final digits = widget.testOtp.replaceAll(RegExp(r'\D'), '').split('');
         for (var i = 0; i < digits.length && i < _otpControllers.length; i++) {
           _otpControllers[i].text = digits[i];
         }
@@ -169,8 +168,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   }
 
   void _updateOTP() {
-    final otp = _otpControllers.map((c) => c.text).join();
-    _otpController.text = otp;
+    _otpController.text = _otpControllers.map((c) => c.text).join();
   }
 
   void _handleOtpChange(String value, int index) {
@@ -209,227 +207,206 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(color: Colors.white),
-        child: Stack(
-          children: [
-            const Positioned(
-              right: 20,
-              top: 32,
-              child: PreAuthBranding(
-                logoWidth: 52,
-                logoHeight: 42,
-                buttonWidth: 81,
-                buttonHeight: 39,
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 53,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 35,
-                  height: 35,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(),
-                  child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 111,
-              child: Text(
-                t.otpVerification,
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 30,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w500,
-                  height: 1.13,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 159,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(
-                      text: 'Check your phone. We have sent you the \ncode at ',
-                      style: TextStyle(
-                        color: Color(0xFF3A3A3A),
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w400,
-                        height: 1.25,
-                      ),
-                    ),
-                    TextSpan(
-                      text: widget.phone.length >= 3
-                          ? '***${widget.phone.substring(widget.phone.length - 3)}'
-                          : widget.phone,
-                      style: const TextStyle(
-                        color: Color(0xFF3A3A3A),
-                        fontSize: 16,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 230,
-              child: SizedBox(
-                width: 372,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(
-                    6,
-                    (index) => Container(
-                      width: 50,
-                      height: 48,
-                      decoration: ShapeDecoration(
-                        shape: RoundedRectangleBorder(
-                          side: const BorderSide(
-                            width: 1,
-                            color: Color(0xFF0080C6),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final horizontalPadding = constraints.maxWidth < 360 ? 16.0 : 20.0;
+            final maxWidth = constraints.maxWidth.clamp(0.0, 430.0);
+            final otpGap = constraints.maxWidth < 360 ? 6.0 : 8.0;
+            final otpBoxWidth = ((maxWidth - (horizontalPadding * 2) - (otpGap * 5)) / 6)
+                .clamp(38.0, 50.0);
+
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 20, horizontalPadding, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppBackButton(onTap: () => Navigator.pop(context)),
+                              const PreAuthBranding(
+                                logoWidth: 52,
+                                logoHeight: 42,
+                                buttonWidth: 81,
+                                buttonHeight: 39,
+                              ),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _otpControllers[index],
-                        focusNode: _focusNodes[index],
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        maxLength: 1,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        onChanged: (value) => _handleOtpChange(value, index),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          counterText: '',
-                        ),
-                        style: const TextStyle(
-                          color: Color(0xFF3A3A3A),
-                          fontSize: 16,
-                          fontFamily: 'Proxima Nova',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 298,
-              child: Text(
-                timeLeft > 0 ? _formattedTime : '00:00',
-                style: const TextStyle(
-                  color: Color(0xFF3A3A3A),
-                  fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w400,
-                  height: 1.25,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 314,
-              top: 301,
-              child: GestureDetector(
-                onTap: _resendOTP,
-                child: Text(
-                  t.resendCode,
-                  style: TextStyle(
-                    color: timeLeft > 0 ? Colors.grey : const Color(0xFF0080C6),
-                    fontSize: 13,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              top: 365,
-              child: GestureDetector(
-                onTap: _isVerifying ? null : _verifyOTP,
-                child: Container(
-                  width: 372,
-                  height: 49,
-                  decoration: ShapeDecoration(
-                    gradient: LinearGradient(
-                      begin: const Alignment(-0.00, 0.07),
-                      end: const Alignment(1.00, 0.91),
-                      colors: _isVerifying
-                          ? [Colors.grey, Colors.grey]
-                          : [const Color(0xFF21409A), const Color(0xFF0080C6)],
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    shadows: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 15,
-                        offset: Offset(0, 4),
-                        spreadRadius: 0,
-                      )
-                    ],
-                  ),
-                  child: Center(
-                    child: _isVerifying
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            t.verifyNow,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 24),
+                          Text(
+                            t.otpVerification,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 30,
+                                                            fontWeight: FontWeight.w500,
+                              height: 1.13,
                             ),
                           ),
-                  ),
-                ),
-              ),
-            ),
-            if (_errorText != null)
-              Positioned(
-                left: 20,
-                top: 420,
-                child: SizedBox(
-                  width: 372,
-                  child: Text(
-                    _errorText!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 14,
-                      fontFamily: 'Proxima Nova',
-                      fontWeight: FontWeight.w400,
+                          const SizedBox(height: 20),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: 'Check your phone. We have sent you the code at ',
+                                  style: TextStyle(
+                                    color: Color(0xFF3A3A3A),
+                                    fontSize: 16,
+                                                                        fontWeight: FontWeight.w400,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: widget.phone.length >= 3
+                                      ? '***${widget.phone.substring(widget.phone.length - 3)}'
+                                      : widget.phone,
+                                  style: const TextStyle(
+                                    color: Color(0xFF3A3A3A),
+                                    fontSize: 16,
+                                                                        fontWeight: FontWeight.w700,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: List.generate(
+                              6,
+                              (index) => SizedBox(
+                                width: otpBoxWidth,
+                                height: 48,
+                                child: DecoratedBox(
+                                  decoration: ShapeDecoration(
+                                    shape: RoundedRectangleBorder(
+                                      side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: _otpControllers[index],
+                                    focusNode: _focusNodes[index],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    maxLength: 1,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    onChanged: (value) => _handleOtpChange(value, index),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      counterText: '',
+                                    ),
+                                    style: const TextStyle(
+                                      color: Color(0xFF3A3A3A),
+                                      fontSize: 16,
+                                                                            fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                timeLeft > 0 ? _formattedTime : '00:00',
+                                style: const TextStyle(
+                                  color: Color(0xFF3A3A3A),
+                                  fontSize: 16,
+                                                                    fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _resendOTP,
+                                child: Text(
+                                  t.resendCode,
+                                  style: TextStyle(
+                                    color: timeLeft > 0 ? Colors.grey : const Color(0xFF0080C6),
+                                    fontSize: 13,
+                                                                        fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 40),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 49,
+                            child: GestureDetector(
+                              onTap: _isVerifying ? null : _verifyOTP,
+                              child: DecoratedBox(
+                                decoration: ShapeDecoration(
+                                  gradient: LinearGradient(
+                                    begin: const Alignment(-0.00, 0.07),
+                                    end: const Alignment(1.00, 0.91),
+                                    colors: _isVerifying
+                                        ? [Colors.grey, Colors.grey]
+                                        : [const Color(0xFF21409A), const Color(0xFF0080C6)],
+                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                  shadows: const [
+                                    BoxShadow(
+                                      color: Color(0x3F000000),
+                                      blurRadius: 15,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: _isVerifying
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          t.verifyNow,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                                                                        fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (_errorText != null) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              _errorText!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-          ],
+            );
+          },
         ),
       ),
     );

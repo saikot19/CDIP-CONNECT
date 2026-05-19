@@ -1,11 +1,14 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 
@@ -138,6 +141,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
+
+
+  Future<void> _handleBack() async {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final shouldExit = await AppFeedback.confirmExit(context);
+    if (shouldExit) {
+      SystemNavigator.pop();
+    }
+  }
+
   void _openResetPassword() {
     final phone = _phoneController.text.trim();
     final validationMessage = phone.isEmpty ? null : AppValidators.bangladeshPhone(phone);
@@ -160,8 +177,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
-    return Scaffold(
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        await _handleBack();
+        return false;
+      },
+      child: Scaffold(
+        body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
@@ -172,10 +194,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                    ),
+                    AppBackButton(onTap: _handleBack),
                     const PreAuthBranding(
                       logoWidth: 58,
                       logoHeight: 46,
@@ -190,8 +209,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 30,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w500,
                   ),
                 ),
                 if (_memberName.isNotEmpty) ...[
@@ -203,8 +221,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     style: const TextStyle(
                       color: Color(0xFF21409A),
                       fontSize: 18,
-                      fontFamily: 'Proxima Nova',
-                      fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -214,8 +231,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w400,
+                                        fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -258,8 +274,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           style: const TextStyle(
                             color: Color(0xFF3A3A3A),
                             fontSize: 16,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
+                                                        fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
@@ -272,8 +287,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w400,
+                                        fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -302,8 +316,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             hintStyle: const TextStyle(
                               color: Color(0xFFB0B0B0),
                               fontSize: 16,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w400,
+                                                            fontWeight: FontWeight.w400,
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 14,
@@ -324,8 +337,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           style: const TextStyle(
                             color: Color(0xFF3A3A3A),
                             fontSize: 16,
-                            fontFamily: 'Proxima Nova',
-                            fontWeight: FontWeight.w400,
+                                                        fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
@@ -360,8 +372,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                             t.signIn.toUpperCase(),
                             style: TextStyle(
                               fontSize: 16,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w600,
+                                                            fontWeight: FontWeight.w600,
                             ),
                           ),
                   ),
@@ -375,8 +386,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       style: TextStyle(
                         color: Color(0xFF0080C6),
                         fontSize: 13,
-                        fontFamily: 'Proxima Nova',
-                        fontWeight: FontWeight.w700,
+                                                fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -385,6 +395,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

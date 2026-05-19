@@ -44,8 +44,10 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const activeColor = Color(0xFF0880C6);
     const inactiveColor = Colors.grey;
+    final navColor = isDark ? const Color(0xFF171C22) : Colors.white;
 
     return Positioned(
       left: 0,
@@ -55,8 +57,8 @@ class BottomNavBar extends StatelessWidget {
         child: Container(
           width: screenWidth,
           height: 80,
-          decoration: const ShapeDecoration(
-            color: Colors.white,
+          decoration: ShapeDecoration(
+            color: navColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),

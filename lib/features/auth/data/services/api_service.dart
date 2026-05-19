@@ -338,6 +338,7 @@ class ApiService {
       lastUpdated: '',
       userData: UserData(
         id: '',
+        code: '',
         name: '',
         mobileNo: '',
         branchName: '',

@@ -242,6 +242,7 @@ class MarketingBanner {
 
 class UserData {
   final String id;
+  final String code;
   final String name;
   final String? nickName;
   final String mobileNo;
@@ -254,6 +255,7 @@ class UserData {
 
   UserData({
     required this.id,
+    required this.code,
     required this.name,
     this.nickName,
     required this.mobileNo,
@@ -268,6 +270,7 @@ class UserData {
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
       id: _asString(json['id']),
+      code: _asString(json['code']),
       name: _asString(json['name']),
       nickName: json['nick_name']?.toString(),
       mobileNo: _asString(json['mobile_no']),
@@ -282,6 +285,7 @@ class UserData {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'code': code,
         'name': name,
         'nick_name': nickName,
         'mobile_no': mobileNo,
@@ -296,22 +300,26 @@ class UserData {
 
 class LoanProduct {
   final String id;
+  final String code;
   final String name;
 
   LoanProduct({
     required this.id,
+    required this.code,
     required this.name,
   });
 
   factory LoanProduct.fromJson(Map<String, dynamic> json) {
     return LoanProduct(
       id: _asString(json['id']),
+      code: _asString(json['code']),
       name: _asString(json['name']),
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'code': code,
         'name': name,
       };
 }

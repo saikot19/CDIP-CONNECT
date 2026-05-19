@@ -65,7 +65,6 @@ class PreAuthBranding extends ConsumerWidget {
                 style: TextStyle(
                   color: const Color(0xFF0880C6),
                   fontSize: isBangla ? 16 : 14,
-                  fontFamily: isBangla ? 'Hind Siliguri' : 'Proxima Nova',
                   fontWeight: FontWeight.w600,
                 ),
               ),

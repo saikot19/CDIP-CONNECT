@@ -8,6 +8,7 @@ import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.d
 import 'package:cdip_connect/shared/widgets/password_guideline_checklist.dart';
 import 'package:flutter/material.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SetPasswordScreen extends ConsumerStatefulWidget {
@@ -99,7 +100,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
             return SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
+                child: Align(
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 430),
                     child: Padding(
@@ -111,14 +113,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: const SizedBox(
-                                  width: 35,
-                                  height: 35,
-                                  child: Icon(Icons.arrow_back, color: Color(0xFF0880C6)),
-                                ),
-                              ),
+                              AppBackButton(onTap: () => Navigator.pop(context)),
                               const PreAuthBranding(
                                 logoWidth: 52,
                                 logoHeight: 42,
@@ -133,8 +128,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 30,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w500,
+                                                            fontWeight: FontWeight.w500,
                               height: 1.13,
                             ),
                           ),
@@ -144,8 +138,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 10,
-                              fontFamily: 'Proxima Nova',
-                              fontWeight: FontWeight.w400,
+                                                            fontWeight: FontWeight.w400,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -175,8 +168,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                                     style: const TextStyle(
                                       color: Color(0xFF3A3A3A),
                                       fontSize: 16,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w600,
+                                                                            fontWeight: FontWeight.w600,
                                       height: 1.25,
                                     ),
                                   ),
@@ -281,8 +273,7 @@ class _GradientButton extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  fontFamily: 'Proxima Nova',
-                  fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                 ),
               ),
       ),

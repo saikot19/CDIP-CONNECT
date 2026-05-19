@@ -1,14 +1,17 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/services/shared_preference_service.dart';
+import 'package:cdip_connect/core/utils/app_formatters.dart';
+import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/display_formatters.dart';
+import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
+import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
+import 'package:cdip_connect/features/savings/presentation/screens/savings_details_screen.dart';
+import 'package:cdip_connect/shared/models/login_response_model.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
+import 'package:cdip_connect/shared/widgets/app_back_button.dart';
 import 'package:cdip_connect/shared/widgets/empty_portfolio_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cdip_connect/shared/models/login_response_model.dart';
-import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
-import 'package:cdip_connect/features/savings/presentation/screens/savings_details_screen.dart';
-import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class SavingsPortfolioScreen extends ConsumerStatefulWidget {
   final AllSummary allSummary;
@@ -21,6 +24,10 @@ class SavingsPortfolioScreen extends ConsumerStatefulWidget {
 
 class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
     with SingleTickerProviderStateMixin {
+  static const Color _deepBlue = Color(0xFF073D82);
+  static const Color _lightBlue = Color(0xFF0878C8);
+  static const Color _closedGrey = Color(0xFF8A8A8A);
+
   late TabController _tabController;
   String _lastUpdated = 'Sync pending';
 
@@ -35,32 +42,29 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
     _filterSavings();
   }
 
-  void _filterSavings() {
-    _activeSavings.clear();
-    _closedSavings.clear();
-
-    for (var saving in widget.allSummary.savings) {
-      if (saving.isOpen) {
-        _activeSavings.add(saving);
-      } else {
-        _closedSavings.add(saving);
-      }
+  @override
+  void didUpdateWidget(covariant SavingsPortfolioScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.allSummary != widget.allSummary) {
+      _filterSavings();
     }
+  }
+
+  void _filterSavings() {
+    _activeSavings
+      ..clear()
+      ..addAll(widget.allSummary.savings.where((saving) => saving.isOpen));
+    _closedSavings
+      ..clear()
+      ..addAll(widget.allSummary.savings.where((saving) => !saving.isOpen));
   }
 
   Future<void> _loadLastUpdated() async {
     final prefsService = SharedPreferenceService();
     final lastUpdated = await prefsService.getLastUpdated();
+    if (!mounted) return;
     if (lastUpdated != null && lastUpdated.isNotEmpty) {
-      try {
-        setState(() {
-          _lastUpdated = DisplayFormatters.formatLastUpdated(lastUpdated);
-        });
-      } catch (e) {
-        setState(() {
-          _lastUpdated = lastUpdated;
-        });
-      }
+      setState(() => _lastUpdated = DisplayFormatters.formatLastUpdated(lastUpdated));
     }
   }
 
@@ -73,135 +77,148 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
     );
   }
 
+  void _goHome() {
+    AppNavigation.resetTo(
+      context,
+      const HomeScreen(),
+      style: RouteTransitionStyle.cupertino,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final t = AppLocalizations(ref.watch(localizationProvider));
+    final top = MediaQuery.paddingOf(context).top;
     final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : _lastUpdated;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
-      body: Stack(
-        children: [
-          // Header
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              width: screenWidth,
-              height: 116,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color.fromARGB(255, 9, 14, 84),
-                    Color.fromARGB(255, 50, 61, 178),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Title and back button
-          Positioned(
-            left: 20,
-            top: 58,
-            right: 20,
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back, color: Colors.white),
-                ),
-                const SizedBox(width: 13),
-                Text(
-                  t.savingsPortfolio,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontFamily: 'Proxima Nova',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Last updated bar
-          Positioned(
-            left: 0,
-            top: 116,
-            child: Container(
-              width: screenWidth,
-              height: 23,
-              color: const Color(0xFF05A300),
-              child: Center(
-                child: Text(
-                  '${t.transactionsLastUpdatedOn} $lastUpdatedText',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontFamily: 'Proxima Nova',
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Main Content
-          Positioned(
-            top: 139,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Column(
-              children: [
-                // Portfolio Tabs
-                Container(
-                  color: const Color(0xFFF5F3F3),
-                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
-                  child: Row(
-                    children: [
-                      _buildPortfolioTab(t.loanPortfolio, false, switchToLoan),
-                      const SizedBox(width: 18),
-                      _buildPortfolioTab(t.savingsPortfolio, true, () {}),
-                    ],
-                  ),
-                ),
-                // Active/Closed Tabs
-                Container(
-                  color: Colors.white,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: const Color(0xFF0880C6),
-                    labelColor: const Color(0xFF0880C6),
-                    unselectedLabelColor: Colors.black.withOpacity(0.5),
-                    tabs: [
-                      Tab(text: t.activeSavings),
-                      Tab(text: t.closedSavings),
-                    ],
-                  ),
-                ),
-                // Tab Content
-                Expanded(
-                  child: Container(
-                    color: Colors.white,
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildSavingsList(_activeSavings, true, t),
-                        _buildSavingsList(_closedSavings, false, t),
-                      ],
+    return WillPopScope(
+      onWillPop: () async {
+        _goHome();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF6F6F6),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              bottom: 80,
+              child: Column(
+                children: [
+                  _buildHeader(top, t, lastUpdatedText),
+                  _buildPortfolioSwitch(t),
+                  _buildTabBar(t),
+                  Expanded(
+                    child: Container(
+                      color: Colors.white,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildSavingsList(_activeSavings, true, t),
+                          _buildSavingsList(_closedSavings, false, t),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
+            BottomNavBar(
+              isHome: false,
+              memberName: '',
+              allSummary: widget.allSummary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(double top, AppLocalizations t, String lastUpdatedText) {
+    return Column(
+      children: [
+        Container(
+          height: top + 116,
+          width: double.infinity,
+          padding: EdgeInsets.only(left: 20, right: 20, top: top + 34),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 9, 14, 84),
+                Color.fromARGB(255, 50, 61, 178),
               ],
             ),
           ),
-          // Bottom Nav
-          BottomNavBar(
-            isHome: false,
-            memberName: '',
-            allSummary: widget.allSummary,
+          child: Row(
+            children: [
+              AppBackButton(
+                onTap: _goHome,
+                color: Colors.white,
+                size: 24,
+                touchSize: 38,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t.savingsPortfolio,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                                        fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
+        ),
+        Container(
+          width: double.infinity,
+          height: 23,
+          color: const Color(0xFF05A300),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '${t.transactionsLastUpdatedOn} $lastUpdatedText',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+                          ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPortfolioSwitch(AppLocalizations t) {
+    return Container(
+      color: const Color(0xFFF5F3F3),
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(child: _buildPortfolioTab(t.loanPortfolio, false, switchToLoan)),
+          const SizedBox(width: 18),
+          Expanded(child: _buildPortfolioTab(t.savingsPortfolio, true, () {})),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar(AppLocalizations t) {
+    return Container(
+      color: Colors.white,
+      child: TabBar(
+        controller: _tabController,
+        indicatorColor: const Color(0xFF0880C6),
+        labelColor: const Color(0xFF0880C6),
+        unselectedLabelColor: Colors.black.withOpacity(0.5),
+        tabs: [
+          Tab(text: t.activeSavings),
+          Tab(text: t.closedSavings),
         ],
       ),
     );
@@ -215,20 +232,25 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
         fallbackIcon: Icons.savings_outlined,
       );
     }
+
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 20, bottom: 100),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
       itemCount: savings.length,
       itemBuilder: (context, index) {
-        return _buildSavingsCard(context, savings[index], index, isTappable: isActive);
+        return _buildSavingsCard(context, savings[index], index, isTappable: isActive, t: t);
       },
     );
   }
 
-  Widget _buildSavingsCard(BuildContext context, UserSaving saving, int index, {required bool isTappable}) {
-    final color = saving.isOpen ? const Color(0xFF023373) : const Color(0xFF9B9B9B);
-    final initials = (saving.productName?.isNotEmpty == true)
-        ? saving.productName!.substring(0, 2).toUpperCase()
-        : 'SA';
+  Widget _buildSavingsCard(
+    BuildContext context,
+    UserSaving saving,
+    int index, {
+    required bool isTappable,
+    required AppLocalizations t,
+  }) {
+    final color = saving.isOpen ? (index.isEven ? _deepBlue : _lightBlue) : _closedGrey;
+    final initials = _savingInitials(saving.productName);
 
     return GestureDetector(
       onTap: isTappable
@@ -246,64 +268,83 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
             }
           : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+        constraints: const BoxConstraints(minHeight: 150),
         decoration: ShapeDecoration(
           color: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           shadows: const [
             BoxShadow(
-                color: Color(0x19000000), blurRadius: 4, offset: Offset(0, 4))
+              color: Color(0x26000000),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: ShapeDecoration(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Center(
-                    child: Text(initials,
-                        style: const TextStyle(
-                            color: Color(0xFF0080C6), fontSize: 24, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            _InitialBadge(text: initials),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(saving.productName ?? 'Savings', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                      Text('#${saving.code}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                      Expanded(
+                        child: Text(
+                          saving.productName ?? 'Savings',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                                                        fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '#${saving.code}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                                                        fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                _buildDetailRow(Icons.calendar_today_outlined,'Opening Date', saving.openingDate),
-                if (!saving.isOpen) ...[
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.calendar_today_outlined,'Closing Date', saving.closingDate ?? 'N/A'),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.arrow_upward_outlined,'Total Deposit', '${saving.totalDeposit.toStringAsFixed(0)} BDT'),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.arrow_downward_outlined,'Total Withdraw', '${saving.totalWithdraw.toStringAsFixed(0)} BDT'),
-                ] else ...[
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.monetization_on_outlined,'Total Savings Amount', '${saving.netSavingAmount.toStringAsFixed(0)} BDT'),
-                ]
-              ],
+                  const SizedBox(height: 18),
+                  _CardDetailRow(
+                    icon: Icons.calendar_today_outlined,
+                    title: t.openingDate,
+                    value: AppFormatters.date(saving.openingDate),
+                  ),
+                  const SizedBox(height: 10),
+                  _CardDetailRow(
+                    icon: Icons.payments_outlined,
+                    title: t.totalSavingsAmount,
+                    value: AppFormatters.amount(saving.netSavingAmount, suffix: t.bdt),
+                  ),
+                  if (!saving.isOpen) ...[
+                    const SizedBox(height: 10),
+                    _CardDetailRow(
+                      icon: Icons.event_busy_outlined,
+                      title: 'Closing Date',
+                      value: AppFormatters.date(saving.closingDate),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -311,43 +352,43 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String title, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 14),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
-          ],
-        ),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-      ],
-    );
+  String _savingInitials(String? name) {
+    final cleaned = (name ?? 'SA').trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleaned.isEmpty) return 'SA';
+    final words = cleaned.split(' ').where((word) => word.isNotEmpty).toList();
+    if (words.length == 1) {
+      final end = words.first.length < 2 ? words.first.length : 2;
+      return words.first.substring(0, end).toUpperCase();
+    }
+    return words.take(3).map((word) => word[0].toUpperCase()).join();
   }
 
   Widget _buildPortfolioTab(String title, bool isActive, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        height: 49,
+        alignment: Alignment.center,
         decoration: ShapeDecoration(
           color: isActive ? const Color(0xFF0442BF) : Colors.transparent,
           shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 1,
-              color: isActive ? Colors.transparent : const Color(0xFF0442BF),
-            ),
+            side: BorderSide(width: 1, color: isActive ? Colors.transparent : const Color(0xFF0442BF)),
             borderRadius: BorderRadius.circular(10),
           ),
+          shadows: isActive
+              ? const [BoxShadow(color: Color(0x26000000), blurRadius: 10, offset: Offset(0, 4))]
+              : const [],
         ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isActive ? Colors.white : const Color(0xFF0442BF),
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            title,
+            maxLines: 1,
+            style: TextStyle(
+              color: isActive ? Colors.white : const Color(0xFF0442BF),
+              fontSize: 14,
+                            fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -358,5 +399,87 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+}
+
+class _InitialBadge extends StatelessWidget {
+  final String text;
+
+  const _InitialBadge({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: const TextStyle(
+            color: Color(0xFF0880C6),
+            fontSize: 20,
+                        fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardDetailRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _CardDetailRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 14),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+                        fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
   }
 }

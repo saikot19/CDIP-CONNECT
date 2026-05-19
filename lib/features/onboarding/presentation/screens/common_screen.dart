@@ -1,7 +1,8 @@
+import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
-import 'package:flutter/material.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:flutter/material.dart';
 
 class CommonScreen extends StatelessWidget {
   const CommonScreen({super.key});
@@ -26,105 +27,104 @@ class CommonScreen extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxContentWidth = constraints.maxWidth.clamp(0.0, 430.0);
+    return WillPopScope(
+      onWillPop: () => AppFeedback.confirmExit(context),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final maxContentWidth = constraints.maxWidth.clamp(0.0, 430.0);
+              final compact = constraints.maxWidth < 360;
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxContentWidth),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: _ImageCarousel(pages: pages),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 49,
-                              child: OutlinedButton(
-                                onPressed: () => AppToast.showComingSoon('Product information'),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                    width: 1,
-                                    color: Color(0xFF21409A),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxContentWidth),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 14 : 20,
+                      16,
+                      compact ? 14 : 20,
+                      24,
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: _ImageCarousel(pages: pages),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 49,
+                                child: OutlinedButton(
+                                  onPressed: () => AppToast.showComingSoon('Product information'),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(width: 1, color: Color(0xFF21409A)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                    padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 10),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'SEE OUR PRODUCT',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFF21409A),
-                                    fontSize: 16,
-                                    fontFamily: 'Proxima Nova',
-                                    fontWeight: FontWeight.w600,
+                                  child: const FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      'SEE OUR PRODUCT',
+                                      maxLines: 1,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Color(0xFF21409A),
+                                        fontSize: 16,
+                                                                                fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => AppNavigation.push(
-                                context,
-                                const SignUpScreen(),
-                              ),
-                              child: Container(
-                                height: 49,
-                                decoration: ShapeDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment(-0.00, 0.07),
-                                    end: Alignment(1.00, 0.91),
-                                    colors: [
-                                      Color(0xFF21409A),
-                                      Color(0xFF0080C6),
+                            SizedBox(width: compact ? 10 : 16),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => AppNavigation.push(context, const SignUpScreen()),
+                                child: Container(
+                                  height: 49,
+                                  decoration: ShapeDecoration(
+                                    gradient: const LinearGradient(
+                                      begin: Alignment(-0.00, 0.07),
+                                      end: Alignment(1.00, 0.91),
+                                      colors: [Color(0xFF21409A), Color(0xFF0080C6)],
+                                    ),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                    shadows: const [
+                                      BoxShadow(
+                                        color: Color(0x3F000000),
+                                        blurRadius: 15,
+                                        offset: Offset(0, 4),
+                                      ),
                                     ],
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  shadows: const [
-                                    BoxShadow(
-                                      color: Color(0x3F000000),
-                                      blurRadius: 15,
-                                      offset: Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'SIGN UP',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Proxima Nova',
-                                      fontWeight: FontWeight.w600,
+                                  child: const Center(
+                                    child: Text(
+                                      'SIGN UP',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                                                                fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -165,7 +165,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final imageHeight = (size.height * 0.42).clamp(260.0, 400.0);
+    final imageHeight = (size.height * 0.42).clamp(240.0, 400.0);
 
     return Column(
       children: [
@@ -196,8 +196,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 30,
-                      fontFamily: 'Proxima Nova',
-                      fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w700,
                       height: 1.13,
                     ),
                   ),
@@ -208,8 +207,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                     style: const TextStyle(
                       color: Color(0xFF3A3A3A),
                       fontSize: 16,
-                      fontFamily: 'Proxima Nova',
-                      fontWeight: FontWeight.w400,
+                                            fontWeight: FontWeight.w400,
                       height: 1.25,
                     ),
                   ),
@@ -229,9 +227,7 @@ class _ImageCarouselState extends State<_ImageCarousel> {
               width: _currentPage == index ? 18 : 8,
               height: 8,
               decoration: BoxDecoration(
-                color: _currentPage == index
-                    ? const Color(0xFF0880C6)
-                    : const Color(0xFFEBEBEB),
+                color: _currentPage == index ? const Color(0xFF0880C6) : const Color(0xFFEBEBEB),
                 borderRadius: BorderRadius.circular(20),
               ),
             );
