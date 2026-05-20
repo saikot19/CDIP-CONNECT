@@ -176,6 +176,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenBg = isDark ? const Color(0xFF101418) : Colors.white;
+    final fieldBg = isDark ? const Color(0xFF171C22) : Colors.white;
+    final primaryText = isDark ? const Color(0xFFF2F4F7) : Colors.black;
+    final secondaryText = isDark ? const Color(0xFFD0D5DD) : const Color(0xFF3A3A3A);
 
     return WillPopScope(
       onWillPop: () async {
@@ -183,6 +188,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         return false;
       },
       child: Scaffold(
+        backgroundColor: screenBg,
         body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -207,7 +213,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Text(
                   t.signIn,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: primaryText,
                     fontSize: 30,
                                         fontWeight: FontWeight.w500,
                   ),
@@ -229,7 +235,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Text(
                   t.phoneNumberLabel,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: primaryText,
                     fontSize: 14,
                                         fontWeight: FontWeight.w400,
                   ),
@@ -237,6 +243,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
+                    color: fieldBg,
                     border: Border.all(color: const Color(0xFF0880C6)),
                     borderRadius: BorderRadius.circular(5),
                   ),
@@ -271,8 +278,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               horizontal: 8,
                             ),
                           ),
-                          style: const TextStyle(
-                            color: Color(0xFF3A3A3A),
+                          style: TextStyle(
+                            color: secondaryText,
                             fontSize: 16,
                                                         fontWeight: FontWeight.w400,
                           ),
@@ -285,7 +292,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Text(
                   t.password,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: primaryText,
                     fontSize: 14,
                                         fontWeight: FontWeight.w400,
                   ),
@@ -293,6 +300,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
+                    color: fieldBg,
                     border: Border.all(color: const Color(0xFF0880C6)),
                     borderRadius: BorderRadius.circular(5),
                   ),
@@ -313,8 +321,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Enter your password',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFFB0B0B0),
+                            hintStyle: TextStyle(
+                              color: isDark ? const Color(0xFF98A2B3) : const Color(0xFFB0B0B0),
                               fontSize: 16,
                                                             fontWeight: FontWeight.w400,
                             ),
@@ -334,8 +342,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               ),
                             ),
                           ),
-                          style: const TextStyle(
-                            color: Color(0xFF3A3A3A),
+                          style: TextStyle(
+                            color: secondaryText,
                             fontSize: 16,
                                                         fontWeight: FontWeight.w400,
                           ),

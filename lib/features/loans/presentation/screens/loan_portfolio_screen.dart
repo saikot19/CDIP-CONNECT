@@ -98,7 +98,7 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
     final top = MediaQuery.paddingOf(context).top;
-    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : _lastUpdated;
+    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : AppFormatters.digits(_lastUpdated);
 
     return WillPopScope(
       onWillPop: () async {
@@ -106,7 +106,7 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F6F6),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: [
             Positioned.fill(
@@ -118,7 +118,7 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
                   _buildTabBar(t),
                   Expanded(
                     child: Container(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       child: TabBarView(
                         controller: _tabController,
                         children: [
@@ -219,12 +219,12 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
 
   Widget _buildTabBar(AppLocalizations t) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       child: TabBar(
         controller: _tabController,
         indicatorColor: const Color(0xFF0880C6),
         labelColor: const Color(0xFF0880C6),
-        unselectedLabelColor: Colors.black.withOpacity(0.5),
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
         tabs: [
           Tab(text: t.activeLoan),
           Tab(text: t.closedLoan),
@@ -246,12 +246,11 @@ class _LoanPortfolioScreenState extends ConsumerState<LoanPortfolioScreen>
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
       itemCount: loans.length,
       itemBuilder: (context, index) {
-        final isMostRecentClosed = !isActive && index == 0;
         return _buildLoanCard(
           context,
           loans[index],
           index,
-          isTappable: isActive || isMostRecentClosed,
+          isTappable: isActive,
           t: t,
         );
       },
@@ -454,15 +453,18 @@ class _CardDetailRow extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.white, size: 14),
               const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                                        fontWeight: FontWeight.w400,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ),

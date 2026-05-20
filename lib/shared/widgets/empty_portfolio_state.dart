@@ -1,3 +1,4 @@
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -40,10 +41,10 @@ class EmptyPortfolioState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF1E1E1E),
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
@@ -51,9 +52,9 @@ class EmptyPortfolioState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black.withOpacity(0.55),
+                color: AppTheme.textSecondary(context),
                 fontSize: 13,
-                                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w400,
                 height: 1.35,
               ),
             ),

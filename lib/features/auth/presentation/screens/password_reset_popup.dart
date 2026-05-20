@@ -1,4 +1,5 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
 import 'package:cdip_connect/shared/widgets/pre_auth_branding.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,7 @@ class PasswordResetPopup extends ConsumerWidget {
         width: double.infinity,
         height: double.infinity,
         clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: BoxDecoration(color: AppTheme.authScaffold(context)),
         child: Stack(
           children: [
             const Positioned(
@@ -49,8 +50,8 @@ class PasswordResetPopup extends ConsumerWidget {
               child: Text(
                 t.translate('password_reset'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: AppTheme.textPrimary(context),
                   fontSize: 20,
                                     fontWeight: FontWeight.w700,
                   height: 1.70,
@@ -64,8 +65,8 @@ class PasswordResetPopup extends ConsumerWidget {
               child: Text(
                 t.translate('password_reset_success'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF3A3A3A),
+                style: TextStyle(
+                  color: AppTheme.textSecondary(context),
                   fontSize: 14,
                                     fontWeight: FontWeight.w400,
                   height: 1.25,

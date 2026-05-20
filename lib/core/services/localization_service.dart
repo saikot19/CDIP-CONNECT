@@ -94,10 +94,14 @@ class AppLocalizations {
       'no_closed_loans_title': 'No closed loans yet',
       'no_active_savings_title': 'No active savings yet',
       'no_closed_savings_title': 'No closed savings yet',
-      'no_active_loans_message': 'When you have an active loan, it will appear here.',
-      'no_closed_loans_message': 'Closed loan records will appear here once available.',
-      'no_active_savings_message': 'When you have an active savings account, it will appear here.',
-      'no_closed_savings_message': 'Closed savings accounts will appear here once available.',
+      'no_active_loans_message':
+          'When you have an active loan, it will appear here.',
+      'no_closed_loans_message':
+          'Closed loan records will appear here once available.',
+      'no_active_savings_message':
+          'When you have an active savings account, it will appear here.',
+      'no_closed_savings_message':
+          'Closed savings accounts will appear here once available.',
       'loan_product': 'Loan Product',
       'savings_product': 'Savings Product',
       'disbursement_date': 'Disbursement Date',
@@ -127,6 +131,8 @@ class AppLocalizations {
       'privacy_policy': 'Privacy Policy',
       'terms_condition': 'Terms & Condition',
       'logout': 'Logout',
+      'dark_mode': 'Dark Mode',
+      'theme_updated': 'Theme updated.',
 
       // Auth
       'otp_verification': 'OTP Verification',
@@ -169,18 +175,19 @@ class AppLocalizations {
       'good_evening': 'শুভ সন্ধ্যা,',
       'good_night': 'শুভ রাত্রি,',
       'app_up_to_date': 'অ্যাপ আপডেটেড আছে',
-      'new_version_available': 'নতুন ভার্সন পাওয়া যাচ্ছে। অনুগ্রহ করে আপডেট করুন।',
+      'new_version_available':
+          'নতুন ভার্সন পাওয়া যাচ্ছে। অনুগ্রহ করে আপডেট করুন।',
       'unable_to_load_portfolio': 'পোর্টফোলিও তথ্য লোড করা যায়নি',
       'portfolio_summary': 'আপনার পোর্টফোলিও সারাংশ',
       'manage_portfolio': 'পোর্টফোলিও পরিচালনা',
-      'outstanding': 'বকেয়া',
-      'total_outstanding': 'মোট বকেয়া',
+      'outstanding': 'ঋণ স্থিতি',
+      'total_outstanding': 'মোট ঋণ স্থিতি',
       'total_savings': 'মোট সঞ্চয়',
       'total_due_amount': 'মোট বকেয়া পরিমাণ',
       'no_of_loans': 'ঋণের সংখ্যা',
       'no_of_savings': 'সঞ্চয়ের সংখ্যা',
       'no_of_due_loans': 'বকেয়া ঋণের সংখ্যা',
-      'overdue': 'অতিবাহিত',
+      'overdue': 'বকেয়া',
       'savings': 'সঞ্চয়',
       'loan': 'ঋণ',
       'referral': 'রেফারেল',
@@ -201,7 +208,8 @@ class AppLocalizations {
       'no_active_loans_message': 'আপনার সক্রিয় ঋণ থাকলে এখানে দেখাবে।',
       'no_closed_loans_message': 'বন্ধ ঋণের তথ্য পাওয়া গেলে এখানে দেখাবে।',
       'no_active_savings_message': 'আপনার সক্রিয় সঞ্চয় থাকলে এখানে দেখাবে।',
-      'no_closed_savings_message': 'বন্ধ সঞ্চয়ের তথ্য পাওয়া গেলে এখানে দেখাবে।',
+      'no_closed_savings_message':
+          'বন্ধ সঞ্চয়ের তথ্য পাওয়া গেলে এখানে দেখাবে।',
       'loan_product': 'ঋণ পণ্য',
       'savings_product': 'সঞ্চয় পণ্য',
       'disbursement_date': 'বিতরণের তারিখ',
@@ -223,14 +231,16 @@ class AppLocalizations {
       'branch_name': 'শাখার নাম',
       'my_portfolio': 'আমার পোর্টফোলিও',
       'change_language': 'ভাষা পরিবর্তন করুন',
-      'application_history': 'আবেদন ইতিহাস',
-      'manage_address': 'ঠিকানা পরিচালনা',
+      'application_history': 'আবেদনের তথ্য সমূহ',
+      'manage_address': 'ঠিকানা হালনাগাদ',
       'rate_us': 'আমাদের রেট করুন',
       'share_app': 'অ্যাপ শেয়ার করুন',
       'about_us': 'আমাদের সম্পর্কে',
       'privacy_policy': 'গোপনীয়তা নীতি',
-      'terms_condition': 'নিয়ম এবং শর্ত',
+      'terms_condition': 'নিয়ম ও শর্তাবলী',
       'logout': 'লগআউট',
+      'dark_mode': 'ডার্ক মোড',
+      'theme_updated': 'থিম আপডেট হয়েছে।',
 
       // Auth
       'otp_verification': 'OTP যাচাইকরণ',
@@ -309,7 +319,8 @@ class AppLocalizations {
   String get closedLoan => translate('closed_loan');
   String get activeSavings => translate('active_savings');
   String get closedSavings => translate('closed_savings');
-  String get transactionsLastUpdatedOn => translate('transactions_last_updated_on');
+  String get transactionsLastUpdatedOn =>
+      translate('transactions_last_updated_on');
   String get syncPending => translate('sync_pending');
   String get noActiveLoansTitle => translate('no_active_loans_title');
   String get noClosedLoansTitle => translate('no_closed_loans_title');
@@ -348,6 +359,8 @@ class AppLocalizations {
   String get privacyPolicy => translate('privacy_policy');
   String get termsCondition => translate('terms_condition');
   String get logout => translate('logout');
+  String get darkMode => translate('dark_mode');
+  String get themeUpdated => translate('theme_updated');
 
   String get bdt => translate('bdt');
   String get fontFamily => locale == 'bn' ? 'Anek Bangla' : 'Proxima Nova';
@@ -362,4 +375,3 @@ class AppLocalizations {
     return 'Last ${AppFormatters.digits(count)} $noun showing.';
   }
 }
-

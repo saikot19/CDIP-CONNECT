@@ -30,7 +30,7 @@ class CommonScreen extends StatelessWidget {
     return WillPopScope(
       onWillPop: () => AppFeedback.confirmExit(context),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -193,8 +193,8 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                   Text(
                     page.title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 30,
                                             fontWeight: FontWeight.w700,
                       height: 1.13,
@@ -204,8 +204,8 @@ class _ImageCarouselState extends State<_ImageCarousel> {
                   Text(
                     page.description,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFF3A3A3A),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.78),
                       fontSize: 16,
                                             fontWeight: FontWeight.w400,
                       height: 1.25,

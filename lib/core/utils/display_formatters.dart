@@ -18,6 +18,6 @@ class DisplayFormatters {
     final dateTime = DateTime.tryParse(normalized);
     if (dateTime == null) return raw;
 
-    return AppFormatters.digits(DateFormat('d MMM y, h:mm a').format(dateTime));
+    return AppFormatters.dateTime(dateTime.toIso8601String());
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_formatters.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,20 +42,14 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
     final topSafeArea = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
+      backgroundColor: AppTheme.scaffold(context),
       body: Padding(
         padding: EdgeInsets.fromLTRB(12, topSafeArea + 28, 12, 16),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppTheme.elevatedSurface(context),
             borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x19000000),
-                blurRadius: 18,
-                offset: Offset(0, 4),
-              ),
-            ],
+            boxShadow: [AppTheme.cardShadow(context)],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,8 +64,8 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
                     textAlign: TextAlign.left,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary(context),
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
                       height: 1.25,
@@ -83,9 +78,9 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildHeader(t),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(height: 1, thickness: 0.5, color: Colors.black26),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(height: 1, thickness: 0.5, color: AppTheme.divider(context)),
               ),
               Expanded(
                 child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -151,8 +146,8 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
             child: Text(
               t.transactionDate,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -163,8 +158,8 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
             child: Text(
               t.transactionAmount,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -179,10 +174,10 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       itemCount: txns.length + 1,
-      separatorBuilder: (_, __) => const Divider(
+      separatorBuilder: (_, __) => Divider(
         height: 18,
         thickness: 0.5,
-        color: Colors.black12,
+        color: AppTheme.divider(context),
       ),
       itemBuilder: (context, index) {
         if (index == txns.length) {
@@ -200,10 +195,12 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
               child: Text(
                 AppFormatters.date(transactionDate),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF21409A),
+                style: TextStyle(
+                  color: AppTheme.isDark(context)
+                      ? AppTheme.textPrimary(context)
+                      : const Color(0xFF21409A),
                   fontSize: 12,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: AppTheme.isDark(context) ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ),
@@ -212,10 +209,12 @@ class _LoanDetailsScreenState extends ConsumerState<LoanDetailsScreen> {
               child: Text(
                 AppFormatters.amount(transactionAmount, suffix: t.bdt),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF21409A),
+                style: TextStyle(
+                  color: AppTheme.isDark(context)
+                      ? AppTheme.textPrimary(context)
+                      : const Color(0xFF21409A),
                   fontSize: 12,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: AppTheme.isDark(context) ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ),
@@ -240,8 +239,8 @@ class _TransactionSummary extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.left,
-          style: const TextStyle(
-            color: Color(0xFF6B7280),
+          style: TextStyle(
+            color: AppTheme.mutedText(context),
             fontSize: 12,
             fontWeight: FontWeight.w400,
             height: 1.35,

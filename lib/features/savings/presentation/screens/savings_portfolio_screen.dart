@@ -89,7 +89,7 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
     final top = MediaQuery.paddingOf(context).top;
-    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : _lastUpdated;
+    final lastUpdatedText = _lastUpdated == 'Sync pending' ? t.syncPending : AppFormatters.digits(_lastUpdated);
 
     return WillPopScope(
       onWillPop: () async {
@@ -97,7 +97,7 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F6F6),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Stack(
           children: [
             Positioned.fill(
@@ -109,7 +109,7 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
                   _buildTabBar(t),
                   Expanded(
                     child: Container(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       child: TabBarView(
                         controller: _tabController,
                         children: [
@@ -210,12 +210,12 @@ class _SavingsPortfolioScreenState extends ConsumerState<SavingsPortfolioScreen>
 
   Widget _buildTabBar(AppLocalizations t) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       child: TabBar(
         controller: _tabController,
         indicatorColor: const Color(0xFF0880C6),
         labelColor: const Color(0xFF0880C6),
-        unselectedLabelColor: Colors.black.withOpacity(0.5),
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
         tabs: [
           Tab(text: t.activeSavings),
           Tab(text: t.closedSavings),
@@ -452,15 +452,18 @@ class _CardDetailRow extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.white, size: 14),
               const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                                        fontWeight: FontWeight.w400,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_flow.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
@@ -207,7 +208,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.authScaffold(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -246,8 +247,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                           const SizedBox(height: 24),
                           Text(
                             t.otpVerification,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 30,
                                                             fontWeight: FontWeight.w500,
                               height: 1.13,
@@ -257,10 +258,10 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                           Text.rich(
                             TextSpan(
                               children: [
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Check your phone. We have sent you the code at ',
                                   style: TextStyle(
-                                    color: Color(0xFF3A3A3A),
+                                    color: AppTheme.textSecondary(context),
                                     fontSize: 16,
                                                                         fontWeight: FontWeight.w400,
                                     height: 1.35,
@@ -270,8 +271,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                   text: widget.phone.length >= 3
                                       ? '***${widget.phone.substring(widget.phone.length - 3)}'
                                       : widget.phone,
-                                  style: const TextStyle(
-                                    color: Color(0xFF3A3A3A),
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary(context),
                                     fontSize: 16,
                                                                         fontWeight: FontWeight.w700,
                                     height: 1.35,
@@ -307,8 +308,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                       border: InputBorder.none,
                                       counterText: '',
                                     ),
-                                    style: const TextStyle(
-                                      color: Color(0xFF3A3A3A),
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary(context),
                                       fontSize: 16,
                                                                             fontWeight: FontWeight.w600,
                                     ),
@@ -323,8 +324,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                             children: [
                               Text(
                                 timeLeft > 0 ? _formattedTime : '00:00',
-                                style: const TextStyle(
-                                  color: Color(0xFF3A3A3A),
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary(context),
                                   fontSize: 16,
                                                                     fontWeight: FontWeight.w400,
                                 ),

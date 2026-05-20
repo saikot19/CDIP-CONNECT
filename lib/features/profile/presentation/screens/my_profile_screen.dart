@@ -1,3 +1,4 @@
+import 'package:cdip_connect/core/providers/theme_mode_provider.dart';
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
@@ -63,6 +64,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   Widget build(BuildContext context) {
     final language = ref.watch(localizationProvider);
     final t = AppLocalizations(language);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF101418) : const Color(0xFFF6F6F6);
 
     return WillPopScope(
       onWillPop: () async {
@@ -70,7 +73,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F6F6),
+        backgroundColor: backgroundColor,
         body: Stack(
           children: [
             Positioned.fill(
@@ -120,8 +123,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             t.myProfile,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 24,
                             fontWeight: FontWeight.w500,
             ),
@@ -136,7 +139,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF171C22) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -172,8 +175,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   _memberName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF1E1E1E),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
@@ -191,6 +194,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 
   Widget _buildMenuCard(AppLocalizations t, String language) {
+    final themeMode = ref.watch(appThemeModeProvider);
+    final isDarkSelected = themeMode == ThemeMode.dark || (themeMode == ThemeMode.system && Theme.of(context).brightness == Brightness.dark);
     final rows = [
       _ProfileMenuAction(
         icon: Icons.account_balance_wallet_outlined,
@@ -222,6 +227,26 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ? 'বাংলা ভাষা নির্বাচন করা হয়েছে।'
                 : 'English language selected.',
           );
+        },
+      ),
+      _ProfileMenuAction(
+        icon: Icons.dark_mode_outlined,
+        text: t.darkMode,
+        trailing: Switch.adaptive(
+          value: isDarkSelected,
+          activeColor: const Color(0xFF0880C6),
+          onChanged: (value) async {
+            await ref.read(appThemeModeProvider.notifier).setThemeMode(
+                  value ? ThemeMode.dark : ThemeMode.light,
+                );
+            AppToast.showSuccess(t.themeUpdated);
+          },
+        ),
+        onTap: () async {
+          await ref.read(appThemeModeProvider.notifier).setThemeMode(
+                isDarkSelected ? ThemeMode.light : ThemeMode.dark,
+              );
+          AppToast.showSuccess(t.themeUpdated);
         },
       ),
       _ProfileMenuAction(
@@ -296,21 +321,23 @@ class _ProfileInfoLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFE4E7EC) : const Color(0xFF3A3A3A);
     return Text.rich(
       TextSpan(
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(
-              color: Color(0xFF3A3A3A),
+            style: TextStyle(
+              color: textColor,
               fontSize: 12,
                             fontWeight: FontWeight.w700,
             ),
           ),
           TextSpan(
             text: AppFormatters.digits(value),
-            style: const TextStyle(
-              color: Color(0xFF3A3A3A),
+            style: TextStyle(
+              color: textColor,
               fontSize: 12,
                             fontWeight: FontWeight.w400,
             ),
@@ -329,6 +356,7 @@ class _ProfileMenuAction {
   final VoidCallback onTap;
   final Color iconColor;
   final Color textColor;
+  final Widget? trailing;
 
   const _ProfileMenuAction({
     required this.icon,
@@ -336,6 +364,7 @@ class _ProfileMenuAction {
     required this.onTap,
     this.iconColor = const Color(0xFF0878C8),
     this.textColor = const Color(0xFF3A3A3A),
+    this.trailing,
   });
 }
 
@@ -346,6 +375,12 @@ class _ProfileMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rowColor = isDark ? const Color(0xFF171C22) : Colors.white;
+    final textColor = action.textColor == const Color(0xFF3A3A3A)
+        ? (isDark ? const Color(0xFFE4E7EC) : const Color(0xFF3A3A3A))
+        : action.textColor;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -355,7 +390,7 @@ class _ProfileMenuRow extends StatelessWidget {
           height: 54,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: rowColor,
             borderRadius: BorderRadius.circular(8),
             boxShadow: const [
               BoxShadow(
@@ -383,12 +418,13 @@ class _ProfileMenuRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: action.textColor,
+                    color: textColor,
                     fontSize: 13,
-                                        fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
+              if (action.trailing != null) action.trailing!,
             ],
           ),
         ),

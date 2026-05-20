@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import 'app_toast.dart';
+import 'app_theme.dart';
 
 class AppFeedback {
   const AppFeedback._();
@@ -23,7 +24,7 @@ class AppFeedback {
       barrierDismissible: true,
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.elevatedSurface(context),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -43,21 +44,21 @@ class AppFeedback {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Close CDIP Connect?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppTheme.textPrimary(context),
                     fontSize: 21,
                                         fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Are you sure you want to close the app?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF3A3A3A),
+                    color: AppTheme.textSecondary(context),
                     fontSize: 14,
                                       ),
                 ),
@@ -104,7 +105,7 @@ class AppFeedback {
       barrierDismissible: true,
       builder: (context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.elevatedSurface(context),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -124,20 +125,20 @@ class AppFeedback {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Are you sure?',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: AppTheme.textPrimary(context),
                     fontSize: 22,
                                         fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'You will need to sign in again to access your account.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF3A3A3A),
+                    color: AppTheme.textSecondary(context),
                     fontSize: 14,
                                       ),
                 ),

@@ -1,15 +1,16 @@
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class AppBackButton extends StatelessWidget {
   final VoidCallback? onTap;
-  final Color color;
+  final Color? color;
   final double size;
   final double touchSize;
 
   const AppBackButton({
     super.key,
     this.onTap,
-    this.color = Colors.black,
+    this.color,
     this.size = 26,
     this.touchSize = 44,
   });
@@ -26,7 +27,7 @@ class AppBackButton extends StatelessWidget {
           height: touchSize,
           child: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: color,
+            color: color ?? AppTheme.textPrimary(context),
             size: size,
           ),
         ),

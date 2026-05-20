@@ -1,6 +1,7 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/auth/data/services/api_service.dart';
@@ -93,7 +94,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.authScaffold(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -125,8 +126,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                           const SizedBox(height: 24),
                           Text(
                             t.setPassword,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 30,
                                                             fontWeight: FontWeight.w500,
                               height: 1.13,
@@ -135,8 +136,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                           const SizedBox(height: 34),
                           Text(
                             t.typePassword,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 10,
                                                             fontWeight: FontWeight.w400,
                             ),
@@ -165,8 +166,8 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                                       border: InputBorder.none,
                                       contentPadding: EdgeInsets.only(left: 20, right: 8, bottom: 2),
                                     ),
-                                    style: const TextStyle(
-                                      color: Color(0xFF3A3A3A),
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary(context),
                                       fontSize: 16,
                                                                             fontWeight: FontWeight.w600,
                                       height: 1.25,

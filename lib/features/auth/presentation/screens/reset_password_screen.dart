@@ -1,5 +1,6 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_flow.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
@@ -204,7 +205,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.authScaffold(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -237,8 +238,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           const SizedBox(height: 24),
                           Text(
                             t.resetPassword,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 30,
                                                             fontWeight: FontWeight.w500,
                               height: 1.13,
@@ -247,8 +248,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           const SizedBox(height: 34),
                           Text(
                             t.phoneNumberLabel,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 10,
                                                             fontWeight: FontWeight.w400,
                             ),
@@ -267,14 +268,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                               keyboardType: TextInputType.phone,
                               maxLength: 11,
                               onChanged: (_) => _clearError(),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '01XXXXXXXXX',
                                 counterText: '',
                                 border: InputBorder.none,
+                                hintStyle: TextStyle(color: AppTheme.mutedText(context)),
                                 contentPadding: EdgeInsets.only(left: 20, right: 12, bottom: 2),
                               ),
-                              style: const TextStyle(
-                                color: Color(0xFF3A3A3A),
+                              style: TextStyle(
+                                color: AppTheme.textPrimary(context),
                                 fontSize: 16,
                                                                 fontWeight: FontWeight.w600,
                               ),
@@ -306,7 +308,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final t = AppLocalizations(ref.watch(localizationProvider));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.authScaffold(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -338,8 +340,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           const SizedBox(height: 24),
                           Text(
                             t.resetPassword,
-                            style: const TextStyle(
-                              color: Colors.black,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary(context),
                               fontSize: 30,
                                                             fontWeight: FontWeight.w500,
                               height: 1.13,
@@ -437,8 +439,8 @@ class _InlinePasswordField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.black,
+          style: TextStyle(
+            color: AppTheme.textPrimary(context),
             fontSize: 10,
                         fontWeight: FontWeight.w400,
           ),
@@ -459,13 +461,14 @@ class _InlinePasswordField extends StatelessWidget {
                   controller: controller,
                   obscureText: obscureText,
                   onChanged: onChanged,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: '**************',
                     border: InputBorder.none,
+                    hintStyle: TextStyle(color: AppTheme.mutedText(context)),
                     contentPadding: EdgeInsets.only(left: 20, right: 8, bottom: 2),
                   ),
-                  style: const TextStyle(
-                    color: Color(0xFF3A3A3A),
+                  style: TextStyle(
+                    color: AppTheme.textPrimary(context),
                     fontSize: 16,
                                         fontWeight: FontWeight.w600,
                   ),
@@ -534,17 +537,18 @@ class _PasswordField extends StatelessWidget {
                       controller: controller,
                       obscureText: obscureText,
                       onChanged: onChanged,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '**************',
                         border: InputBorder.none,
+                        hintStyle: TextStyle(color: AppTheme.mutedText(context)),
                         contentPadding: EdgeInsets.only(
                           left: 20,
                           right: 8,
                           bottom: 2,
                         ),
                       ),
-                      style: const TextStyle(
-                        color: Color(0xFF3A3A3A),
+                      style: TextStyle(
+                        color: AppTheme.textPrimary(context),
                         fontSize: 16,
                                                 fontWeight: FontWeight.w600,
                       ),
@@ -569,8 +573,8 @@ class _PasswordField extends StatelessWidget {
             top: labelTop,
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: AppTheme.textPrimary(context),
                 fontSize: 10,
                                 fontWeight: FontWeight.w400,
               ),

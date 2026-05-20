@@ -155,6 +155,7 @@ class AuthService {
   static const String _keyAccessToken = 'accessToken';
   static const String _keyLastUpdated = 'lastUpdated';
   static const String _keyAppVersion = 'appVersion';
+  static const String _keyDashboardBackgroundedAt = 'dashboardBackgroundedAt';
 
   static Future<void> saveUserSession(LoginResponse response) async {
     try {
@@ -198,6 +199,40 @@ class AuthService {
     return loginResponse?.userData.name.trim() ?? '';
   }
 
+
+
+
+  static Future<void> markDashboardBackgrounded() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyDashboardBackgroundedAt, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  static Future<void> clearDashboardBackgroundMarker() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyDashboardBackgroundedAt);
+  }
+
+  static Future<bool> shouldRestoreDashboardAfterBackground() async {
+    final prefs = await SharedPreferences.getInstance();
+    final startedAt = prefs.getInt(_keyDashboardBackgroundedAt);
+    if (startedAt == null) return false;
+
+    final elapsed = DateTime.now().millisecondsSinceEpoch - startedAt;
+    const maxRestoreWindowMs = 6 * 60 * 60 * 1000;
+    if (elapsed > maxRestoreWindowMs) {
+      await prefs.remove(_keyDashboardBackgroundedAt);
+      return false;
+    }
+
+    final loggedIn = prefs.getBool(_keyIsLoggedIn) ?? false;
+    if (!loggedIn) return false;
+
+    final token = await SecureSessionService.getAccessToken();
+    if (token.trim().isEmpty) return false;
+
+    final cachedLogin = await getLoginResponse();
+    return cachedLogin != null && cachedLogin.status == 200;
+  }
 
   static Future<String> getRememberedPhone() async {
     final prefs = await SharedPreferences.getInstance();

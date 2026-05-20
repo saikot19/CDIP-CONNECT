@@ -1,6 +1,7 @@
 import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_flow.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
@@ -110,6 +111,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         return false;
       },
       child: Scaffold(
+        backgroundColor: AppTheme.authScaffold(context),
         body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -138,8 +140,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         const SizedBox(height: 24),
                         Text(
                           t.signUp,
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary(context),
                             fontSize: 30,
                                                         fontWeight: FontWeight.w500,
                           ),
@@ -147,8 +149,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         const SizedBox(height: 32),
                         Text(
                           t.phoneNumberLabel,
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary(context),
                             fontSize: 14,
                                                         fontWeight: FontWeight.w400,
                           ),
@@ -179,8 +181,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                       horizontal: 8,
                                     ),
                                   ),
-                                  style: const TextStyle(
-                                    color: Color(0xFF3A3A3A),
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary(context),
                                     fontSize: 16,
                                                                         fontWeight: FontWeight.w400,
                                   ),
@@ -228,8 +230,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             children: [
                               Text(
                                 t.alreadyHaveAccount,
-                                style: const TextStyle(
-                                  color: Color(0xFF3A3A3A),
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary(context),
                                   fontSize: 12,
                                                                     fontWeight: FontWeight.w400,
                                 ),
@@ -238,8 +240,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 onTap: _goToSignIn,
                                 child: Text(
                                   t.signIn,
-                                  style: const TextStyle(
-                                    color: Color(0xFF0080C6),
+                                  style: TextStyle(
+                                    color: const Color(0xFF0080C6),
                                     fontSize: 12,
                                                                         fontWeight: FontWeight.w700,
                                     decoration: TextDecoration.underline,
@@ -256,8 +258,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               children: [
                                 TextSpan(
                                   text: t.poweredBy,
-                                  style: const TextStyle(
-                                    color: Color(0xFF3A3A3A),
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary(context),
                                     fontSize: 12,
                                                                         fontWeight: FontWeight.w400,
                                   ),

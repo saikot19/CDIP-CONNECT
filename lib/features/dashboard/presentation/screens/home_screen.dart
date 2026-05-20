@@ -5,7 +5,9 @@ import 'package:cdip_connect/core/services/localization_service.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/shared/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cdip_connect/core/utils/app_formatters.dart';
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
@@ -124,9 +126,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations(ref.watch(localizationProvider));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF101418) : const Color(0xFFF6F6F6);
+    final cardColor = isDark ? const Color(0xFF171C22) : Colors.white;
+    final primaryTextColor = isDark ? const Color(0xFFF2F4F7) : const Color(0xFF1E1E1E);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
+    return WillPopScope(
+      onWillPop: () async {
+        await AuthService.markDashboardBackgrounded();
+        SystemNavigator.pop();
+        return false;
+      },
+      child: Scaffold(
+      backgroundColor: backgroundColor,
       body: FutureBuilder<AllSummary?>(
         future: _allSummaryFuture,
         builder: (context, summarySnapshot) {
@@ -153,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         Positioned.fill(
                           child: Container(
-                            color: const Color(0xFFF6F6F6),
+                            color: backgroundColor,
                           ),
                         ),
                         Positioned(
@@ -301,7 +313,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           height: h(383),
                           child: Container(
                             decoration: ShapeDecoration(
-                              color: Colors.white,
+                              color: cardColor,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -321,7 +333,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Text(
                             t.portfolioSummary,
                             style: TextStyle(
-                              color: const Color(0xFF1E1E1E),
+                              color: primaryTextColor,
                               fontSize: f(16),
                                                             fontWeight: FontWeight.w700,
                               height: 2.13,
@@ -424,7 +436,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Text(
                             t.managePortfolio,
                             style: TextStyle(
-                              color: const Color(0xFF1E1E1E),
+                              color: primaryTextColor,
                               fontSize: f(16),
                                                             fontWeight: FontWeight.w700,
                               height: 2.13,
@@ -493,6 +505,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -672,7 +685,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black,
+                color: AppTheme.textPrimary(context),
                 fontSize: f(14),
                                 fontWeight: FontWeight.w700,
                 height: 1,

@@ -1,4 +1,5 @@
 // lib/widgets/portfolio_card_widget.dart
+import 'package:cdip_connect/core/utils/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class PortfolioCard extends StatelessWidget {
@@ -48,7 +49,7 @@ class PortfolioCard extends StatelessWidget {
         maxHeight: cardHeight + 50,
       ),
       decoration: ShapeDecoration(
-        color: Colors.white,
+        color: AppTheme.elevatedSurface(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -92,7 +93,7 @@ class PortfolioCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Color(0xFF21409A),
                           fontSize: 14,
-                                                    fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w700,
                           height: 1,
                         ),
                       ),
@@ -102,10 +103,10 @@ class PortfolioCard extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           productCode,
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary(context),
                             fontSize: 12,
-                                                        fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w700,
                             height: 1.25,
                           ),
                         ),
@@ -126,10 +127,10 @@ class PortfolioCard extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             child: Text(
                               dateLabel!,
-                              style: const TextStyle(
-                                color: Colors.black,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary(context),
                                 fontSize: 10,
-                                                                fontWeight: FontWeight.w400,
+                                fontWeight: FontWeight.w400,
                                 height: 1,
                               ),
                             ),
@@ -140,10 +141,10 @@ class PortfolioCard extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           child: Text(
                             date!,
-                            style: const TextStyle(
-                              color: Color(0xFF3A3A3A),
+                            style: TextStyle(
+                              color: AppTheme.textSecondary(context),
                               fontSize: 14,
-                                                            fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.w400,
                               height: 1,
                             ),
                           ),
@@ -164,7 +165,7 @@ class PortfolioCard extends StatelessWidget {
                           style: TextStyle(
                             color: Color(0xFF0080C6),
                             fontSize: 14,
-                                                        fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w700,
                             height: 1,
                           ),
                         ),
@@ -176,10 +177,10 @@ class PortfolioCard extends StatelessWidget {
                             child: Text(
                               outstanding!,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Colors.black,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary(context),
                                 fontSize: 12,
-                                                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w700,
                                 height: 1.17,
                               ),
                             ),
@@ -213,10 +214,10 @@ class PortfolioCard extends StatelessWidget {
                                   opacity: 0.50,
                                   child: Text(
                                     amountLabel!,
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary(context),
                                       fontSize: 10,
-                                                                            fontWeight: FontWeight.w400,
+                                      fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),
@@ -230,7 +231,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: TextStyle(
                                       color: _getAmountColor(amountLabel!),
                                       fontSize: 14,
-                                                                            fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                       height: 1,
                                     ),
                                   ),
@@ -254,10 +255,10 @@ class PortfolioCard extends StatelessWidget {
                                 opacity: 0.50,
                                 child: Text(
                                   secondAmountLabel!,
-                                  style: const TextStyle(
-                                    color: Colors.black,
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimary(context),
                                     fontSize: 10,
-                                                                        fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                                     height: 1,
                                   ),
                                 ),
@@ -271,7 +272,7 @@ class PortfolioCard extends StatelessWidget {
                                   style: TextStyle(
                                     color: _getAmountColor(secondAmountLabel!),
                                     fontSize: 14,
-                                                                        fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                                     height: 1,
                                   ),
                                 ),
@@ -286,13 +287,13 @@ class PortfolioCard extends StatelessWidget {
                               children: [
                                 Opacity(
                                   opacity: 0.50,
-                                  child: const Text(
+                                  child: Text(
                                     'Overdue',
                                     textAlign: TextAlign.right,
                                     style: TextStyle(
-                                      color: Colors.black,
+                                      color: AppTheme.textPrimary(context),
                                       fontSize: 10,
-                                                                            fontWeight: FontWeight.w400,
+                                      fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),
@@ -307,7 +308,7 @@ class PortfolioCard extends StatelessWidget {
                                     style: const TextStyle(
                                       color: Color(0xFFFF0000),
                                       fontSize: 14,
-                                                                            fontWeight: FontWeight.w400,
+                                      fontWeight: FontWeight.w400,
                                       height: 1,
                                     ),
                                   ),
