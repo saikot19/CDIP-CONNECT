@@ -9,7 +9,8 @@ import 'package:cdip_connect/features/auth/data/services/api_service.dart';
 import 'package:cdip_connect/shared/data/local/database_helper.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
+final authProvider =
+    StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
   return AuthNotifier();
 });
 
@@ -80,10 +81,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
           response: response,
         );
 
-        final accessToken = response['access_token']?.toString() ?? '';
-        if (accessToken.isNotEmpty) {
-          await SecureSessionService.saveAccessToken(accessToken);
-        }
+        // set_password returns an access token in some API responses, but
+        // this flow intentionally sends the user to sign in. Do not persist
+        // a login token until member_login succeeds. Clear the one-time OTP
+        // token after it has been consumed.
+        await SecureSessionService.clearVerifiedToken();
       }
 
       state = const AsyncValue.data(null);
@@ -146,6 +148,8 @@ class OtpTimerNotifier extends StateNotifier<int> {
   }
 }
 
+enum PasswordSetupState { unknown, required, completed }
+
 class AuthService {
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyMemberName = 'memberName';
@@ -199,12 +203,10 @@ class AuthService {
     return loginResponse?.userData.name.trim() ?? '';
   }
 
-
-
-
   static Future<void> markDashboardBackgrounded() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyDashboardBackgroundedAt, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+        _keyDashboardBackgroundedAt, DateTime.now().millisecondsSinceEpoch);
   }
 
   static Future<void> clearDashboardBackgroundMarker() async {
@@ -368,6 +370,45 @@ class AuthService {
     } catch (e) {
       print('Error getting known member name: $e');
       return '';
+    }
+  }
+
+  static Future<PasswordSetupState> getCachedPasswordSetupState(
+      String phone) async {
+    final cleanPhone = phone.trim();
+    if (cleanPhone.isEmpty) return PasswordSetupState.unknown;
+
+    try {
+      final db = DatabaseHelper();
+
+      final loginResponse = await db.getLoginResponse();
+      if (loginResponse?.userData.mobileNo.trim() == cleanPhone) {
+        return PasswordSetupState.completed;
+      }
+
+      final setPasswordResponse = await db.getLatestAuthApiResponse(
+        responseType: 'set_password',
+        phone: cleanPhone,
+      );
+      if (setPasswordResponse != null &&
+          ApiService.isSuccess(setPasswordResponse)) {
+        return PasswordSetupState.completed;
+      }
+
+      final otpResponse = await db.getLatestAuthApiResponse(
+        responseType: 'otp_verification',
+        phone: cleanPhone,
+      );
+      if (otpResponse != null && ApiService.memberExists(otpResponse)) {
+        return ApiService.memberRequiresPasswordSetup(otpResponse)
+            ? PasswordSetupState.required
+            : PasswordSetupState.completed;
+      }
+
+      return PasswordSetupState.unknown;
+    } catch (e) {
+      print('Error getting cached password setup state: $e');
+      return PasswordSetupState.unknown;
     }
   }
 

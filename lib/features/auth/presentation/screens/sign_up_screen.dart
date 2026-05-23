@@ -16,7 +16,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
-  const SignUpScreen({super.key});
+  final String initialPhone;
+
+  const SignUpScreen({super.key, this.initialPhone = ''});
 
   @override
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
@@ -26,6 +28,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _phoneController = TextEditingController();
   String? _errorText;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.text = widget.initialPhone;
+  }
 
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
@@ -139,7 +147,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          t.signUp,
+                          'New User Set Password',
                           style: TextStyle(
                             color: AppTheme.textPrimary(context),
                             fontSize: 30,
@@ -215,7 +223,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             child: _isLoading
                                 ? const CircularProgressIndicator(color: Colors.white)
                                 : Text(
-                                    t.signUp,
+                                    'SEND OTP',
                                     style: const TextStyle(
                                       fontSize: 16,
                                                                             fontWeight: FontWeight.w600,
@@ -229,7 +237,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             alignment: WrapAlignment.center,
                             children: [
                               Text(
-                                t.alreadyHaveAccount,
+                                'Already set password? ',
                                 style: TextStyle(
                                   color: AppTheme.textSecondary(context),
                                   fontSize: 12,

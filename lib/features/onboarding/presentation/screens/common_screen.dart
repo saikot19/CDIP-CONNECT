@@ -1,7 +1,7 @@
 import 'package:cdip_connect/core/utils/app_feedback.dart';
 import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
-import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 
 class CommonScreen extends StatelessWidget {
@@ -84,7 +84,7 @@ class CommonScreen extends StatelessWidget {
                             SizedBox(width: compact ? 10 : 16),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => AppNavigation.push(context, const SignUpScreen()),
+                                onTap: () => AppNavigation.push(context, const SignInScreen(phone: '')),
                                 child: Container(
                                   height: 49,
                                   decoration: ShapeDecoration(
@@ -104,7 +104,7 @@ class CommonScreen extends StatelessWidget {
                                   ),
                                   child: const Center(
                                     child: Text(
-                                      'SIGN UP',
+                                      'SIGN IN',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white,

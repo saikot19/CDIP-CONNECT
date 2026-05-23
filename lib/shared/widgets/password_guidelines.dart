@@ -13,11 +13,14 @@ class PasswordGuidelines extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final checks = <_PasswordCheck>[
-      _PasswordCheck('At least 8 characters', password.trim().length >= 8),
-      _PasswordCheck('No spaces', password.isNotEmpty && !password.contains(RegExp(r'\s'))),
-      _PasswordCheck('Not repeated characters', !RegExp(r'^(.)\1{7,}$').hasMatch(password.trim()) && password.isNotEmpty),
+      _PasswordCheck('At least 6 characters', password.length >= 6, requiredRule: true),
+      _PasswordCheck('No spaces', password.isNotEmpty && !password.contains(RegExp(r'\s')), requiredRule: true),
+      _PasswordCheck('Uppercase letter recommended', RegExp(r'[A-Z]').hasMatch(password)),
+      _PasswordCheck('Lowercase letter recommended', RegExp(r'[a-z]').hasMatch(password)),
+      _PasswordCheck('Number recommended', RegExp(r'\d').hasMatch(password)),
+      _PasswordCheck('Special character recommended', RegExp(r'[^A-Za-z0-9]').hasMatch(password)),
       if (confirmPassword != null)
-        _PasswordCheck('Passwords match', password.trim().isNotEmpty && password.trim() == confirmPassword!.trim()),
+        _PasswordCheck('Passwords match', password.isNotEmpty && password == confirmPassword, requiredRule: true),
     ];
 
     return Column(
@@ -49,7 +52,7 @@ class PasswordGuidelines extends StatelessWidget {
                   style: TextStyle(
                     color: check.passed ? const Color(0xFF05A300) : const Color(0xFF6A6A6A),
                     fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                    fontWeight: check.requiredRule ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -64,6 +67,7 @@ class PasswordGuidelines extends StatelessWidget {
 class _PasswordCheck {
   final String label;
   final bool passed;
+  final bool requiredRule;
 
-  const _PasswordCheck(this.label, this.passed);
+  const _PasswordCheck(this.label, this.passed, {this.requiredRule = false});
 }

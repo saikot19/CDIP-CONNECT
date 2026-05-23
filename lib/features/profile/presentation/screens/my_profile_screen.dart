@@ -5,7 +5,7 @@ import 'package:cdip_connect/core/utils/app_navigation.dart';
 import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/core/utils/app_formatters.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
-import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
 import 'package:cdip_connect/features/loans/presentation/screens/loan_portfolio_screen.dart';
 import 'package:cdip_connect/shared/models/login_response_model.dart';
@@ -307,7 +307,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     if (!mounted) return;
     AppNavigation.resetTo(
       context,
-      const SignUpScreen(),
+      const SignInScreen(phone: ''),
       style: RouteTransitionStyle.fadeScale,
     );
   }

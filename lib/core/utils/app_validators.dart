@@ -11,33 +11,21 @@ class AppValidators {
   }
 
   static String? password(String value) {
-    final password = value.trim();
-    if (password.isEmpty) return 'Please enter your password.';
-    if (password.length < 6) return 'Password must be at least 6 characters.';
-    if (password.contains(RegExp(r'\s'))) {
+    if (value.isEmpty) return 'Please enter your password.';
+    if (value.length < 6) return 'Password must be at least 6 characters.';
+    if (value.length > 64) return 'Password is too long.';
+    if (value.contains(RegExp(r'\s'))) {
       return 'Password cannot contain spaces.';
     }
     return null;
   }
 
   static String? newPassword(String value) {
-    final password = value.trim();
-    if (password.isEmpty) return 'Please enter a new password.';
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters for better security.';
-    }
-    if (password.length > 64) return 'Password is too long.';
-    if (password.contains(RegExp(r'\s'))) {
+    if (value.isEmpty) return 'Please enter a new password.';
+    if (value.length < 6) return 'Password must be at least 6 characters.';
+    if (value.length > 64) return 'Password is too long.';
+    if (value.contains(RegExp(r'\s'))) {
       return 'Password cannot contain spaces.';
-    }
-    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
-      return 'Password must contain at least one letter.';
-    }
-    if (!RegExp(r'\d').hasMatch(password)) {
-      return 'Password must contain at least one number.';
-    }
-    if (RegExp(r'^(.)\1{7,}$').hasMatch(password)) {
-      return 'Please use a stronger password.';
     }
     return null;
   }
@@ -46,8 +34,8 @@ class AppValidators {
     final passwordError = newPassword(password);
     if (passwordError != null) return passwordError;
 
-    if (confirmPassword.trim().isEmpty) return 'Please confirm your password.';
-    if (password.trim() != confirmPassword.trim()) {
+    if (confirmPassword.isEmpty) return 'Please confirm your password.';
+    if (password != confirmPassword) {
       return 'Password and confirm password do not match.';
     }
     return null;

@@ -12,38 +12,43 @@ class PasswordGuidelineChecklist extends StatelessWidget {
     this.showMatchRule = false,
   });
 
-  bool get _hasMinLength => password.trim().length >= 8;
+  bool get _hasMinLength => password.length >= 6;
   bool get _hasNoSpaces => password.isNotEmpty && !password.contains(RegExp(r'\s'));
+  bool get _hasUppercase => RegExp(r'[A-Z]').hasMatch(password);
+  bool get _hasLowercase => RegExp(r'[a-z]').hasMatch(password);
   bool get _hasNumber => RegExp(r'\d').hasMatch(password);
-  bool get _hasLetter => RegExp(r'[A-Za-z]').hasMatch(password);
-  bool get _isNotRepeated => password.isNotEmpty && !RegExp(r'^(.)\1{7,}$').hasMatch(password);
+  bool get _hasSpecial => RegExp(r'[^A-Za-z0-9]').hasMatch(password);
   bool get _matchesConfirm =>
       !showMatchRule ||
       (confirmPassword != null &&
-          confirmPassword!.trim().isNotEmpty &&
-          password.trim() == confirmPassword!.trim());
+          confirmPassword!.isNotEmpty &&
+          password == confirmPassword);
 
   double get progress {
-    final total = showMatchRule ? 6 : 5;
-    final passed = [
+    final checks = [
       _hasMinLength,
-      _hasLetter,
-      _hasNumber,
       _hasNoSpaces,
-      _isNotRepeated,
+      _hasUppercase,
+      _hasLowercase,
+      _hasNumber,
+      _hasSpecial,
       if (showMatchRule) _matchesConfirm,
-    ].where((item) => item).length;
-    return passed / total;
+    ];
+    return checks.where((item) => item).length / checks.length;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF17202A) : const Color(0xFFF4FAFE);
+    final border = isDark ? const Color(0xFF254156) : const Color(0xFFE0F1FA);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFE),
+        color: bg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0F1FA)),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,18 +58,19 @@ class PasswordGuidelineChecklist extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: const Color(0xFFE2E8F0),
+              backgroundColor: isDark ? const Color(0xFF2D3748) : const Color(0xFFE2E8F0),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0880C6)),
             ),
           ),
           const SizedBox(height: 10),
-          _RuleRow(passed: _hasMinLength, text: 'At least 8 characters'),
-          _RuleRow(passed: _hasLetter, text: 'Contains a letter'),
-          _RuleRow(passed: _hasNumber, text: 'Contains a number'),
-          _RuleRow(passed: _hasNoSpaces, text: 'No spaces'),
-          _RuleRow(passed: _isNotRepeated, text: 'Not a repeated sequence'),
+          _RuleRow(passed: _hasMinLength, text: 'At least 6 characters', requiredRule: true),
+          _RuleRow(passed: _hasNoSpaces, text: 'No spaces', requiredRule: true),
+          _RuleRow(passed: _hasUppercase, text: 'Uppercase letter recommended'),
+          _RuleRow(passed: _hasLowercase, text: 'Lowercase letter recommended'),
+          _RuleRow(passed: _hasNumber, text: 'Number recommended'),
+          _RuleRow(passed: _hasSpecial, text: 'Special character recommended'),
           if (showMatchRule)
-            _RuleRow(passed: _matchesConfirm, text: 'Passwords match'),
+            _RuleRow(passed: _matchesConfirm, text: 'Passwords match', requiredRule: true),
         ],
       ),
     );
@@ -74,11 +80,21 @@ class PasswordGuidelineChecklist extends StatelessWidget {
 class _RuleRow extends StatelessWidget {
   final bool passed;
   final String text;
+  final bool requiredRule;
 
-  const _RuleRow({required this.passed, required this.text});
+  const _RuleRow({
+    required this.passed,
+    required this.text,
+    this.requiredRule = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactive = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B);
+    final active = requiredRule ? const Color(0xFF0880C6) : const Color(0xFF05A300);
+    final border = passed ? active : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8));
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
       child: Row(
@@ -88,10 +104,8 @@ class _RuleRow extends StatelessWidget {
             width: 17,
             height: 17,
             decoration: BoxDecoration(
-              color: passed ? const Color(0xFF0880C6) : Colors.transparent,
-              border: Border.all(
-                color: passed ? const Color(0xFF0880C6) : const Color(0xFF94A3B8),
-              ),
+              color: passed ? active : Colors.transparent,
+              border: Border.all(color: border),
               shape: BoxShape.circle,
             ),
             child: passed
@@ -103,9 +117,9 @@ class _RuleRow extends StatelessWidget {
             child: Text(
               text,
               style: TextStyle(
-                color: passed ? const Color(0xFF0880C6) : const Color(0xFF64748B),
+                color: passed ? active : inactive,
                 fontSize: 12,
-                                fontWeight: passed ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: passed ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),

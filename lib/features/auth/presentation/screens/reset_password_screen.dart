@@ -134,7 +134,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     });
 
     try {
-      final password = _newPasswordController.text.trim();
+      final password = _newPasswordController.text;
       final response = await ref.read(authProvider.notifier).setPassword(
             phone: widget.initialPhone,
             password: password,

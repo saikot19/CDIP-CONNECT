@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cdip_connect/core/utils/password_hasher.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -183,7 +182,7 @@ class ApiService {
             headers: _jsonHeaders,
             body: jsonEncode({
               'member_phone': phone.trim(),
-              'password': PasswordHasher.forApi(password),
+              'password': password,
               'verified_token': verifiedToken.trim(),
             }),
           )
@@ -229,7 +228,7 @@ class ApiService {
             headers: _jsonHeaders,
             body: jsonEncode({
               'phone': phone.trim(),
-              'password': PasswordHasher.forApi(password),
+              'password': password,
             }),
           )
           .timeout(_timeout);
@@ -264,13 +263,28 @@ class ApiService {
 
   static bool isSuccess(Map<String, dynamic> response) {
     final status = response['status'];
+
+    // Business failure must always win over HTTP 200. Some endpoints return
+    // HTTP 200 with {status: false}, and treating that as success breaks OTP
+    // verification and password setup flows.
+    if (status == false) return false;
     if (status == true) return true;
+
     if (status is int) return status == 200;
     if (status is String) {
       final normalized = status.toLowerCase().trim();
+      if (normalized == 'false' || normalized == '0' || normalized == 'failed' || normalized == 'error') {
+        return false;
+      }
       return normalized == '200' || normalized == 'true' || normalized == 'success';
     }
-    return _asInt(response['http_status']) == 200;
+
+    // Only fall back to HTTP status when the business status key is absent.
+    if (!response.containsKey('status')) {
+      return _asInt(response['http_status']) == 200;
+    }
+
+    return false;
   }
 
   static String messageOf(
@@ -307,15 +321,81 @@ class ApiService {
     return '';
   }
 
-  static bool memberAlreadyHasPassword(Map<String, dynamic> response) {
+  static bool memberExists(Map<String, dynamic> response) {
     final memberDetails = response['memberDetails'];
-    if (memberDetails is! List || memberDetails.isEmpty) return false;
+    if (memberDetails is List && memberDetails.isNotEmpty) {
+      final firstMember = memberDetails.first;
+      if (firstMember is Map) {
+        final memberId = _asString(firstMember['id']).trim();
+        final phone = _asString(firstMember['mobile_no']).trim();
+        return memberId.isNotEmpty || phone.isNotEmpty;
+      }
+    }
 
-    final firstMember = memberDetails.first;
-    if (firstMember is! Map) return false;
+    final userData = response['user_data'];
+    if (userData is Map) {
+      final memberId = _asString(userData['id']).trim();
+      final phone = _asString(userData['mobile_no']).trim();
+      return memberId.isNotEmpty || phone.isNotEmpty;
+    }
 
-    final password = firstMember['password'];
-    return password != null && password.toString().trim().isNotEmpty;
+    return false;
+  }
+
+  static Map? _memberPayloadOf(Map<String, dynamic> response) {
+    final memberDetails = response['memberDetails'];
+    if (memberDetails is List && memberDetails.isNotEmpty) {
+      final firstMember = memberDetails.first;
+      if (firstMember is Map) return firstMember;
+    }
+
+    final userData = response['user_data'];
+    if (userData is Map) return userData;
+
+    return null;
+  }
+
+  static String? memberPasswordValueOf(Map<String, dynamic> response) {
+    final member = _memberPayloadOf(response);
+    if (member == null || !member.containsKey('password')) return null;
+
+    final rawPassword = member['password'];
+    if (rawPassword == null) return null;
+
+    return rawPassword.toString();
+  }
+
+  static bool memberPasswordIsNullOrEmpty(Map<String, dynamic> response) {
+    final password = memberPasswordValueOf(response);
+    return password == null || password.trim().isEmpty;
+  }
+
+  static bool memberAlreadyHasPassword(Map<String, dynamic> response) {
+    final password = memberPasswordValueOf(response)?.trim();
+    if (password == null || password.isEmpty) return false;
+
+    final normalized = password.toLowerCase();
+    const unusableValues = {
+      '0',
+      'null',
+      'none',
+      'n/a',
+      'na',
+      '-',
+      'false',
+      'no',
+      'd41d8cd98f00b204e9800998ecf8427e', // md5 empty string
+    };
+
+    if (unusableValues.contains(normalized)) return false;
+
+    // The backend stores hashed passwords. Any non-empty usable value means
+    // password setup is complete and the member should sign in normally.
+    return true;
+  }
+
+  static bool memberRequiresPasswordSetup(Map<String, dynamic> response) {
+    return memberExists(response) && !memberAlreadyHasPassword(response);
   }
 
   static LoginResponse? loginResponseFromMap(Map<String, dynamic> response) {

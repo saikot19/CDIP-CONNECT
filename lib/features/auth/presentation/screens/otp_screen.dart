@@ -64,17 +64,20 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
   Future<void> _resendOTP() async {
     if (ref.read(otpTimerProvider) > 0) {
-      AppToast.showInfo('Please wait until the timer ends before resending OTP.');
+      AppToast.showInfo(
+          'Please wait until the timer ends before resending OTP.');
       return;
     }
 
     try {
-      final response = await ref.read(authProvider.notifier).sendOtp(widget.phone);
+      final response =
+          await ref.read(authProvider.notifier).sendOtp(widget.phone);
       if (ApiService.isSuccess(response)) {
         ref.read(otpTimerProvider.notifier).startTimer();
         AppToast.showSuccess('OTP resent successfully.');
       } else {
-        AppToast.showError(ApiService.messageOf(response, fallback: 'Failed to resend OTP.'));
+        AppToast.showError(
+            ApiService.messageOf(response, fallback: 'Failed to resend OTP.'));
       }
     } catch (_) {
       AppToast.showError('Failed to resend OTP. Please try again.');
@@ -104,7 +107,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
           );
 
       if (!ApiService.isSuccess(response)) {
-        final error = ApiService.messageOf(response, fallback: 'Invalid OTP. Please try again.');
+        final error = ApiService.messageOf(response,
+            fallback: 'Invalid OTP. Please try again.');
         if (!mounted) return;
         setState(() => _errorText = error);
         AppToast.showError(error);
@@ -113,7 +117,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
       final verifiedToken = ApiService.verifiedTokenOf(response);
       if (verifiedToken.isEmpty) {
-        const error = 'OTP verified but verification token was missing. Please try again.';
+        const error =
+            'OTP verified but verification token was missing. Please try again.';
         if (!mounted) return;
         setState(() => _errorText = error);
         AppToast.showError(error);
@@ -124,25 +129,42 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
       if (!mounted) return;
       if (widget.flow == OtpFlow.firstTimeSetup) {
-        final alreadyHasPassword = ApiService.memberAlreadyHasPassword(response);
-        if (alreadyHasPassword) {
-          AppToast.showInfo('This account already has a password. Please sign in.');
+        if (!ApiService.memberExists(response)) {
+          const error =
+              'No registered member was found for this phone number. Please contact your branch.';
+          setState(() => _errorText = error);
+          AppToast.showError(error);
+          return;
+        }
+
+        // During first-time authentication, decide the next screen only
+        // from the fresh OTP verification response. A null/empty password
+        // means the member must create a password; any usable password value
+        // means setup is already complete and the member should sign in.
+        final passwordIsNullOrEmpty =
+            ApiService.memberPasswordIsNullOrEmpty(response);
+        final hasStoredPassword = ApiService.memberAlreadyHasPassword(response);
+
+        if (passwordIsNullOrEmpty || !hasStoredPassword) {
+          AppToast.showInfo('Please set a password before signing in.');
           Navigator.pushReplacement(
             context,
             AppNavigation.smoothRoute(
-              builder: (context) => SignInScreen(phone: widget.phone),
+              builder: (context) => SetPasswordScreen(
+                phone: widget.phone,
+                verifiedToken: verifiedToken,
+              ),
             ),
           );
           return;
         }
 
+        AppToast.showInfo(
+            'This account already has a password. Please sign in.');
         Navigator.pushReplacement(
           context,
           AppNavigation.smoothRoute(
-            builder: (context) => SetPasswordScreen(
-              phone: widget.phone,
-              verifiedToken: verifiedToken,
-            ),
+            builder: (context) => SignInScreen(phone: widget.phone),
           ),
         );
       } else {
@@ -178,7 +200,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       for (var i = 0; i < digits.length && index + i < 6; i++) {
         _otpControllers[index + i].text = digits[i];
       }
-      final nextIndex = (index + digits.length).clamp(0, 5);
+      final nextIndex = (index + digits.length).clamp(0, 5).toInt();
       _focusNodes[nextIndex].requestFocus();
     } else if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
@@ -215,8 +237,9 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
             final horizontalPadding = constraints.maxWidth < 360 ? 16.0 : 20.0;
             final maxWidth = constraints.maxWidth.clamp(0.0, 430.0);
             final otpGap = constraints.maxWidth < 360 ? 6.0 : 8.0;
-            final otpBoxWidth = ((maxWidth - (horizontalPadding * 2) - (otpGap * 5)) / 6)
-                .clamp(38.0, 50.0);
+            final otpBoxWidth =
+                ((maxWidth - (horizontalPadding * 2) - (otpGap * 5)) / 6)
+                    .clamp(38.0, 50.0);
 
             return SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -227,7 +250,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: maxWidth),
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(horizontalPadding, 20, horizontalPadding, 24),
+                      padding: EdgeInsets.fromLTRB(
+                          horizontalPadding, 20, horizontalPadding, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -235,7 +259,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AppBackButton(onTap: () => Navigator.pop(context)),
+                              AppBackButton(
+                                  onTap: () => Navigator.pop(context)),
                               const PreAuthBranding(
                                 logoWidth: 52,
                                 logoHeight: 42,
@@ -250,7 +275,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                             style: TextStyle(
                               color: AppTheme.textPrimary(context),
                               fontSize: 30,
-                                                            fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w500,
                               height: 1.13,
                             ),
                           ),
@@ -259,11 +284,12 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: 'Check your phone. We have sent you the code at ',
+                                  text:
+                                      'Check your phone. We have sent you the code at ',
                                   style: TextStyle(
                                     color: AppTheme.textSecondary(context),
                                     fontSize: 16,
-                                                                        fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                                     height: 1.35,
                                   ),
                                 ),
@@ -274,7 +300,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                   style: TextStyle(
                                     color: AppTheme.textSecondary(context),
                                     fontSize: 16,
-                                                                        fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                                     height: 1.35,
                                   ),
                                 ),
@@ -292,7 +318,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                 child: DecoratedBox(
                                   decoration: ShapeDecoration(
                                     shape: RoundedRectangleBorder(
-                                      side: const BorderSide(width: 1, color: Color(0xFF0080C6)),
+                                      side: const BorderSide(
+                                          width: 1, color: Color(0xFF0080C6)),
                                       borderRadius: BorderRadius.circular(5),
                                     ),
                                   ),
@@ -302,8 +329,11 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                     keyboardType: TextInputType.number,
                                     textAlign: TextAlign.center,
                                     maxLength: 1,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                    onChanged: (value) => _handleOtpChange(value, index),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly
+                                    ],
+                                    onChanged: (value) =>
+                                        _handleOtpChange(value, index),
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
                                       counterText: '',
@@ -311,7 +341,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                     style: TextStyle(
                                       color: AppTheme.textSecondary(context),
                                       fontSize: 16,
-                                                                            fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -327,7 +357,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                 style: TextStyle(
                                   color: AppTheme.textSecondary(context),
                                   fontSize: 16,
-                                                                    fontWeight: FontWeight.w400,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               GestureDetector(
@@ -335,9 +365,11 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                 child: Text(
                                   t.resendCode,
                                   style: TextStyle(
-                                    color: timeLeft > 0 ? Colors.grey : const Color(0xFF0080C6),
+                                    color: timeLeft > 0
+                                        ? Colors.grey
+                                        : const Color(0xFF0080C6),
                                     fontSize: 13,
-                                                                        fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
@@ -356,9 +388,13 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                     end: const Alignment(1.00, 0.91),
                                     colors: _isVerifying
                                         ? [Colors.grey, Colors.grey]
-                                        : [const Color(0xFF21409A), const Color(0xFF0080C6)],
+                                        : [
+                                            const Color(0xFF21409A),
+                                            const Color(0xFF0080C6)
+                                          ],
                                   ),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5)),
                                   shadows: const [
                                     BoxShadow(
                                       color: Color(0x3F000000),
@@ -382,7 +418,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
-                                                                                        fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                 ),
@@ -396,7 +432,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                               style: const TextStyle(
                                 color: Colors.red,
                                 fontSize: 14,
-                                                                fontWeight: FontWeight.w400,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],

@@ -4,6 +4,7 @@ import 'package:cdip_connect/core/utils/app_toast.dart';
 import 'package:cdip_connect/core/utils/app_validators.dart';
 import 'package:cdip_connect/features/auth/application/auth_service.dart';
 import 'package:cdip_connect/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:cdip_connect/features/auth/presentation/screens/sign_up_screen.dart';
 import 'package:cdip_connect/features/dashboard/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,6 +62,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         normalized.contains('unauthorized')) {
       return 'Password does not match this account. Please try again or reset your password.';
     }
+    if (normalized.contains('not set') ||
+        normalized.contains('set password') ||
+        normalized.contains('verify') ||
+        normalized.contains('otp')) {
+      return 'Please verify your phone number and set a password before signing in.';
+    }
+    if (normalized.contains('member') ||
+        normalized.contains('not found') ||
+        normalized.contains('not registered')) {
+      return 'This phone number is not registered for CDIP Connect. Please contact your branch.';
+    }
     if (_phoneController.text.trim().isNotEmpty && _memberName.isNotEmpty) {
       return 'Password does not match this account. Please try again or reset your password.';
     }
@@ -75,7 +87,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     FocusScope.of(context).unfocus();
 
     final phone = _phoneController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
 
     final validationMessage = _validateInputs(phone, password);
     if (validationMessage != null) {
@@ -117,7 +129,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           (route) => false,
         );
       } else {
-        final error = _friendlyLoginError(response.message);
+        var error = _friendlyLoginError(response.message);
+        final cachedPasswordState = await AuthService.getCachedPasswordSetupState(phone);
+        if (cachedPasswordState == PasswordSetupState.required) {
+          error = 'This registered member has not set a password on this device yet. Please use New User Set Password to verify your phone and create a password.';
+        }
         if (!mounted) return;
         setState(() => _errorText = error);
         AppToast.showError(error);
@@ -169,6 +185,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       context,
       AppNavigation.smoothRoute(
         builder: (context) => ResetPasswordScreen(initialPhone: phone),
+      ),
+    );
+  }
+
+  void _openFirstTimeSetup() {
+    final phone = _phoneController.text.trim();
+    final validationMessage = phone.isEmpty ? null : AppValidators.bangladeshPhone(phone);
+
+    if (validationMessage != null) {
+      setState(() => _errorText = validationMessage);
+      AppToast.showError(validationMessage);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      AppNavigation.smoothRoute(
+        builder: (context) => SignUpScreen(initialPhone: phone),
       ),
     );
   }
@@ -352,6 +386,44 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: GestureDetector(
+                        onTap: _openResetPassword,
+                        child: Text(
+                          t.forgotPassword,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF0080C6),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: GestureDetector(
+                        onTap: _openFirstTimeSetup,
+                        child: const Text(
+                          'New User Set Password',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: Color(0xFF0080C6),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 if (_errorText != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -378,25 +450,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Text(
                             t.signIn.toUpperCase(),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
-                                                            fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Center(
-                  child: GestureDetector(
-                    onTap: _openResetPassword,
-                    child: Text(
-                      t.forgotPassword,
-                      style: TextStyle(
-                        color: Color(0xFF0080C6),
-                        fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ),
                 ),
               ],

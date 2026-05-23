@@ -57,7 +57,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
     try {
       final response = await ref.read(authProvider.notifier).setPassword(
             phone: widget.phone,
-            password: _passwordController.text.trim(),
+            password: _passwordController.text,
             verifiedToken: widget.verifiedToken,
           );
 
